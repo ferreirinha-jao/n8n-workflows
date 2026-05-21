@@ -1,0 +1,816 @@
+{
+  "name": "Google Maps Scraping",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "3b3abf66-9faa-42af-8887-af0a8ea16019",
+      "name": "When clicking \"Execute Workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        256,
+        112
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "compare": "selectedFields",
+        "fieldsToCompare": "place.id,places.id",
+        "options": {}
+      },
+      "id": "7a109516-9371-4600-82d6-d81d7a43ecc2",
+      "name": "Remove Duplicates",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "position": [
+        1280,
+        400
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "errorMessage": "Google Sheets API Limit has been triggered and the workflow has stopped"
+      },
+      "id": "ffcf9015-a6cb-40c6-bf61-0f45a67920d1",
+      "name": "Stop and Error",
+      "type": "n8n-nodes-base.stopAndError",
+      "position": [
+        2160,
+        416
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "7424452f-e208-4e7e-8144-d0c6278bc0f0",
+              "operator": {
+                "type": "object",
+                "operation": "empty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.body }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ebc9abce-6678-4299-9e5f-530775124958",
+      "name": "If Empty",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1968,
+        144
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $item(\"0\").$node[\"Normaliza\"].json[\"url_planilha\"] }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "=Resultados",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $json.place.nationalPhoneNumber }}",
+            "reviews": "={{ $json.place.reviews }}",
+            "website": "={{ $json.place.websiteUri }}",
+            "place_id": "={{ $json.place.id }}",
+            "nota": "={{ $json.place.rating }}",
+            "tipo": "={{ $json.place.types }}",
+            "Endereço": "={{ $json.place.formattedAddress }}",
+            "TITULO": "={{ $json.place.displayName.text }}",
+            "AÇÃO": "Disparar"
+          },
+          "matchingColumns": [
+            "place_id"
+          ],
+          "schema": [
+            {
+              "id": "XID",
+              "displayName": "XID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AÇÃO",
+              "displayName": "AÇÃO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "STATUS",
+              "displayName": "STATUS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "TITULO",
+              "displayName": "TITULO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nota",
+              "displayName": "nota",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reviews",
+              "displayName": "reviews",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Endereço",
+              "displayName": "Endereço",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "place_id",
+              "displayName": "place_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "types",
+              "displayName": "types",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "9c83921d-b02f-4bd6-bc4a-6b1b7510e0d6",
+      "name": "Adicionando Locais na Planilha",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1504,
+        400
+      ],
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "t1Lpm81SJYV3vl8y",
+          "name": "Google Sheets OAuth2 API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $item(\"0\").$node[\"Normaliza\"].json[\"url_planilha\"] }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('Normaliza').item.json.paginaCategorias }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Normaliza a Rodada').item.json.row_number }}",
+            "status": "scraped"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "CEP",
+              "displayName": "CEP",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Subcategoria",
+              "displayName": "Subcategoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "2504d964-1b1d-48e9-aa6d-52ffe047c683",
+      "name": "Atualizar Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1936,
+        384
+      ],
+      "executeOnce": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "t1Lpm81SJYV3vl8y",
+          "name": "Google Sheets OAuth2 API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3e96db99-ae0a-4a11-9d46-251e6f323bb5",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "scraped",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1472,
+        128
+      ],
+      "id": "ff405333-89d7-4828-b0a6-c7578127b0a4",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7b1629c5-cbfe-4769-8286-66b46c51cd7e",
+              "name": "zip",
+              "type": "number",
+              "value": "={{ $json.CEP }}"
+            },
+            {
+              "id": "9aa89906-d490-4c1e-bed7-88a0d297d793",
+              "name": "row_number",
+              "value": "={{ $json.row_number }}",
+              "type": "string"
+            },
+            {
+              "id": "9d23ccdf-18d0-45ad-8eb8-94a276a52da7",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "01fa8fba-de07-4011-9b75-35ba4b004787",
+      "name": "Normaliza a Rodada",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1264,
+        128
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "fe494490-5f62-475a-896c-d6016844f0af",
+      "name": "Loop Palavra-Chave",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        832,
+        112
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega o primeiro item de entrada\nconst [firstItem] = items || [];\n\n// Garante que places seja um array\nconst places = firstItem?.json?.body?.places ?? [];\nconst otherData = firstItem?.json?.otherData ?? null;\n\n// Se não houver places, loga e retorna lista vazia\nif (!Array.isArray(places) || places.length === 0) {\n  console.log('Places array is empty or undefined.');\n  return [];\n}\n\n// Cada place vira um item separado\nreturn places.map(place => ({\n  json: {\n    place,\n    otherData,\n  },\n}));\n"
+      },
+      "id": "8cd7792a-60e0-4efa-a1f0-67ba53b16cce",
+      "name": "Estrutura do JSON",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        848,
+        400
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "758ff896-7cd8-4f72-bfbb-e64583c5937c",
+              "name": "places.id",
+              "type": "string",
+              "value": "={{ $json.place.id }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "f319d083-d831-4de5-aff4-d38bd51011c5",
+      "name": "Define Place ID",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1056,
+        400
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        96
+      ],
+      "id": "3122d85a-1c16-437c-b919-40e138b8393b",
+      "name": "Finalizado"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1744,
+        384
+      ],
+      "id": "fea32742-43b9-4fea-ba97-6bbb131440ed",
+      "name": "Wait",
+      "webhookId": "215378a8-7075-4085-b97e-4132de5c8e7a"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $json.url_planilha }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $json.paginaCategorias }}",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "6e32e3fd-280f-42ee-aabf-1bbee07d8d29",
+      "name": "dadosPlanilha",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        608,
+        112
+      ],
+      "executeOnce": true,
+      "typeVersion": 4.2,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ev69F2iGtC4aL78L",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Busca Google Maps",
+        "height": 656,
+        "width": 2112,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        192,
+        -32
+      ],
+      "typeVersion": 1,
+      "id": "5bf65775-e1b3-4c7a-be2a-cbbc9ce1ef1e",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Adicionar Autenticação\n",
+        "height": 288,
+        "width": 208,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        560,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "b4f7d931-aaa9-41f4-925c-4eb4c12152fe",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa469a25-eb00-4011-a626-87fae7fb8bbd",
+              "name": "url_planilha",
+              "type": "string",
+              "value": "https://docs.google.com/spreadsheets/d/13jDxHRnE3uyeduIHrrznFHOnbidHThvVqrScBMlIIac/edit?gid=2033888975#gid=2033888975"
+            },
+            {
+              "id": "df0a7a51-0ec6-47d2-9f73-bc8268385305",
+              "name": "paginaCategorias",
+              "type": "string",
+              "value": "Checklist"
+            },
+            {
+              "id": "a1ff9a58-9ae6-4000-9fcd-6c11de23bd48",
+              "name": "page",
+              "type": "string",
+              "value": "CEPS"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e4502eb5-601c-4580-9255-6dd07da8ae9b",
+      "name": "Normaliza",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        432,
+        112
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/maps",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "1a51c4024141c2291cd389dcf7e58724561830e1"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"q\": \"{{ $('Normaliza a Rodada').item.json.palavra_chave }} {{ $('Normaliza a Rodada').item.json.cidade }}\",\n  \"gl\": \"br\",\n  \"hl\": \"pt\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1728,
+        144
+      ],
+      "id": "688ffdd2-39a0-430b-bcf6-6ae1ca21e663",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "If Empty": {
+      "main": [
+        [
+          {
+            "node": "Loop Palavra-Chave",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Estrutura do JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Adicionando Locais na Planilha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking \"Execute Workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Normaliza",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adicionando Locais na Planilha": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar Status": {
+      "main": [
+        [
+          {
+            "node": "Loop Palavra-Chave",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Loop Palavra-Chave",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normaliza a Rodada": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Palavra-Chave": {
+      "main": [
+        [
+          {
+            "node": "Finalizado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Normaliza a Rodada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Estrutura do JSON": {
+      "main": [
+        [
+          {
+            "node": "Define Place ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Define Place ID": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Atualizar Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dadosPlanilha": {
+      "main": [
+        [
+          {
+            "node": "Loop Palavra-Chave",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normaliza": {
+      "main": [
+        [
+          {
+            "node": "dadosPlanilha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If Empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ce092da0-e55c-46a8-8789-c3b3ae7eb528",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6a5b62a5b227877375100d1e945bce3bfb0eda6633bc6b20903db3d4f1678818"
+  },
+  "id": "SwkN9CDIQkDyXjK6",
+  "tags": []
+}

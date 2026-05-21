@@ -1,0 +1,176 @@
+{
+  "name": "Discord Cripto",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        16
+      ],
+      "id": "0f2c6ee6-2cb6-4414-9a27-0ab83e17183d",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://br.investing.com/rss/news_301.rss",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        -816,
+        16
+      ],
+      "id": "3560dc0c-767f-4ab2-a65c-45d25e700e54",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "maxItems": 5
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -624,
+        16
+      ],
+      "id": "003f3635-07ac-41ad-a008-07c0d0a7bfd1",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "52cc4dd2-5902-45bf-a694-145d061312e4",
+              "leftValue": "={{ $json.title }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -416,
+        16
+      ],
+      "id": "bc0cf50b-4ac1-4afc-9a8a-7cdedbf748af",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        32
+      ],
+      "id": "97c48d71-d090-49cc-87be-1b6e8d7523af",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "=Fonte  {{ $json.creator }}\nData {{ $json.pubDate }}\n\n{{ $json.title }}\n\nSaiba mais --> {{ $json.link }}\n----------------------------------------\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "24116ae3-91c0-4f2d-9034-3d52f71dd4b8",
+      "name": "Discord",
+      "webhookId": "afb1fdba-1497-4016-beab-2c9d95c63e3c",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "uOAf2DyyhgsyA1qr",
+          "name": "Discord Webhook account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a2353f78-5c4c-4fcc-8ca7-3d28c4e510c6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cc25e9b21db0bb808ac72e9e199f51088e8cccafb234a76f1477c2cc5b261078"
+  },
+  "id": "OZloh4bmXTWiZv8F",
+  "tags": []
+}

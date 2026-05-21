@@ -1,0 +1,265 @@
+{
+  "name": "Agente de IA da Hashtag",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        64,
+        0
+      ],
+      "id": "dd29cb81-b313-440a-a0d6-f956460e4290",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "BfiPYS0SVhjRu6UK",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Gmail Trigger').item.json.snippet }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        784,
+        -16
+      ],
+      "id": "fa7f8e3c-57c0-4b6b-917d-cb855bd9f7ae",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4ef3c31b-404a-4dbd-ae00-2deaf61dfe5d",
+              "leftValue": "={{ $json.To }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "cad398a0-3a4c-40b8-8c00-20ead49ff1e2",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "content": "Como configurar:",
+        "height": 240,
+        "width": 208,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -112
+      ],
+      "id": "524a4205-e0e2-4c30-a2d6-9bf2b2d6a880",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Como configurar:\n- Definir a baixo (Define Below), como você deseja que a IA responda  ou aja\n- Selecionar do \"INPUT\" o (Prompt (User Message))",
+        "height": 288,
+        "width": 672,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        416,
+        -128
+      ],
+      "id": "3edd798e-deb4-4a76-b3ae-5d826d505a08",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        784,
+        224
+      ],
+      "id": "69987b26-a6e7-4950-a386-10608ea7bff0",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "oOU4xgHTNFwLff6j",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        880,
+        528
+      ],
+      "id": "665a9e71-77e1-4489-a849-d9ea4649788d",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "content": "Como configurar:\n\n- Informar \"Codigo\" da conversa (Session Key From Previous Node).\n- Definir a baixo (Define Below), e informar a identificação da conversa.\n- Informar quantas mensagens você quer que ele lembre e guarde na memória",
+        "height": 304,
+        "width": 672,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        352,
+        352
+      ],
+      "id": "f4f79b25-683d-4578-bd70-b810b0ddd997",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        -16
+      ],
+      "id": "045baafe-88f7-4fa5-97a7-bc7aa681f32c",
+      "name": "Reply to a message",
+      "webhookId": "b918fb41-806b-4a2d-9647-4e1b89483800",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "BfiPYS0SVhjRu6UK",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Como configurar:\n- No ID da Mensagem (Message ID), informar o \"Código\" da mensagem/conversa\n- No campo mensagem (Message), informar o que você quer responder no email/o que voce quer que ele responda, Mensagem output fornecida pela IA, o que ela deu de resposta",
+        "height": 288,
+        "width": 1520,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        -128
+      ],
+      "id": "1143f87c-2817-49c1-bc12-93c9354e7739",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Reply to a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "dd53d3ac-e431-433e-92c6-163124c61173",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6a5b62a5b227877375100d1e945bce3bfb0eda6633bc6b20903db3d4f1678818"
+  },
+  "id": "qIh2SDSqTCyC5g97",
+  "tags": []
+}

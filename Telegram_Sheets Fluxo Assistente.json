@@ -1,0 +1,204 @@
+{
+  "name": "Telegram/Sheets Fluxo Assistente",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -48,
+        0
+      ],
+      "id": "ae93db0e-099c-4014-a059-90d666d432fd",
+      "name": "Telegram Trigger",
+      "webhookId": "d66f406a-a277-4664-a137-8fdcc7506fc0",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZHO7WGgaEn3Jx4Yq",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Telegram Trigger').item.json.message.text }}",
+        "options": {
+          "systemMessage": "=Você é o assistente pessoal de treino do João, um ginasta.\n\nVocê tem acesso a uma planilha com o cronograma semanal de treinos dele.\nA planilha tem os treinos organizados por dia da semana (Segunda, Terça, Quarta, Quinta, Sexta).\nCada linha contém o grupo muscular e os exercícios do dia.\n\nREGRAS:\n- Sempre que o João perguntar sobre treino, busque os dados na planilha\n- Entenda linguagem informal: \"treino de hoje\", \"o que rola hoje\", \"treino de segunda\" são todos pedidos válidos\n- Hoje é {{$now.toFormat('cccc', { locale: 'pt-BR' })}}\n- Responda de forma curta, clara e motivadora em português\n- Se ele pedir um dia específico, busque aquele dia\n- Se ele pedir \"hoje\", use o dia atual automaticamente\n- Não peça confirmações desnecessárias, só responda\n\nExemplos de pedidos que você deve entender:\n\"treino de hoje\" → busca o dia atual\n\"o que treino amanhã\" → busca o próximo dia\n\"treino de perna\" → busca qual dia tem perna\n\"segunda\" → busca segunda-feira"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        144,
+        0
+      ],
+      "id": "75945831-668b-4dbd-8bb3-432888632300",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        0
+      ],
+      "id": "d49a8920-61cd-42c6-99aa-e34141460b18",
+      "name": "Send a text message",
+      "webhookId": "eb06ac08-1467-499f-96a8-5ef6b773e022",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZHO7WGgaEn3Jx4Yq",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        352
+      ],
+      "id": "3f8fba7d-d0a2-4485-ae5e-7b7e26cbf89f",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        144,
+        192
+      ],
+      "id": "c14c2990-03c7-43f3-a287-29a3a15e1c87",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "QRd7iutGqyOs1Ssl",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1NRP3o1z7-VLmoRH8pJ6uJ5L2amhPwWLNaAUJ7a102Oo",
+          "mode": "list",
+          "cachedResultName": "Rotina de Treino Semanal",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NRP3o1z7-VLmoRH8pJ6uJ5L2amhPwWLNaAUJ7a102Oo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Rotina de Treino Semanal",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NRP3o1z7-VLmoRH8pJ6uJ5L2amhPwWLNaAUJ7a102Oo/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        288,
+        512
+      ],
+      "id": "d2997e8f-febe-42a8-8347-771a38c0a5ba",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lKukkzBrKKgjc4Hm",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "fd2ad053-3782-4ffd-82d0-31c8b04ae2fd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9ff8b726837539100e64287bed35d4b723480ae83867bf49eef318799a71507b"
+  },
+  "id": "avPsgljQg6XMR1CE",
+  "tags": []
+}

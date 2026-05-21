@@ -1,0 +1,141 @@
+{
+  "name": "Assistente de Email - Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f2598b0f-fb20-4449-9e69-66bdb837fd32",
+      "name": "Gmail Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analise o email abaixo e responda APENAS em JSON válido, sem nenhum texto fora do JSON, sem backticks, sem markdown:\n\n{\n  \"remetente\": \"nome ou email de quem enviou\",\n  \"categoria\": \"parceria\" ou \"cliente\" ou \"spam\" ou \"outro\",\n  \"resumo\": [\"bullet 1\", \"bullet 2\", \"bullet 3\"],\n  \"resposta_sugerida\": \"texto curto, gentil e profissional em português\"\n}`\n\n`Email:\nAssunto: {{ $('Gmail Trigger').first().json.headers?.Subject ?? $('Gmail Trigger').first().json.Subject ?? 'sem assunto' }}\nDe: {{ $('Gmail Trigger').first().json.headers?.From ?? $('Gmail Trigger').first().json.From ?? 'remetente desconhecido' }}\nMensagem: {{ $('Gmail Trigger').first().json.snippet }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        176,
+        0
+      ],
+      "id": "812233ab-b730-4902-9760-bd048efdaba7",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        176,
+        224
+      ],
+      "id": "07c7e2ac-d37b-45af-aa5f-073d8dd66820",
+      "name": "Groq Chat Model"
+    },
+    {
+      "parameters": {
+        "jsCode": "const texto = $input.first().json.text;\n\n// Remove backticks, markdown e espaços extras\nconst limpo = texto\n  .replace(/```json/g, \"\")\n  .replace(/```/g, \"\")\n  .trim();\n\ntry {\n  const resultado = JSON.parse(limpo);\n  return [{ json: resultado }];\n} catch (e) {\n  // Se falhar, retorna o texto bruto pra debug\n  return [{ json: { erro: e.message, texto_original: limpo } }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        0
+      ],
+      "id": "42e759a4-fbd2-47cb-9d79-2904d994c5f8",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "chatId": "8099580676",
+        "text": "=📩 EMAIL NOVO, JOÃO! \n👤 De: {{ $('Code in JavaScript').first().json.remetente }} \n📌 Assunto: {{ $('Gmail Trigger').first().json.Subject }} \n🏷️ Categoria: {{ $('Code in JavaScript').first().json.categoria }} \n📋 RESUMO: {{ $('Code in JavaScript').first().json.resumo.map(b => \"• \" + b).join(\"\\n\") }} \n💬 SUGESTÃO DE RESPOSTA: {{ $('Code in JavaScript').first().json.resposta_sugerida }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        656,
+        0
+      ],
+      "id": "eaea860e-cec5-46b8-a922-fe24289384b8",
+      "name": "Send a text message",
+      "webhookId": "e52f6f80-33bd-4a3e-9abd-f25a25a8e8e0"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f248901f-28ad-4549-ba8e-79134e10acb8",
+  "meta": {
+    "instanceId": "cc25e9b21db0bb808ac72e9e199f51088e8cccafb234a76f1477c2cc5b261078"
+  },
+  "id": "nGIxuD776mICCeVS",
+  "tags": []
+}

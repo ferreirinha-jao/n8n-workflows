@@ -1,0 +1,158 @@
+{
+  "name": "Fluxo Assistente Email",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        272
+      ],
+      "id": "a59e3b19-0cb6-408c-a74f-4a63ae0ce847",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Yh6e2XXp5akkQaiA",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analise o email abaixo e responda APENAS em JSON válido, sem nenhum texto fora do JSON, sem backticks, sem markdown:\n\n{\n  \"remetente\": \"nome ou email de quem enviou\",\n  \"categoria\": \"parceria\" ou \"cliente\" ou \"spam\" ou \"outro\",\n  \"resumo\": [\"bullet 1\", \"bullet 2\", \"bullet 3\"],\n  \"resposta_sugerida\": \"texto curto, gentil e profissional em português\"\n}`\n\n`Email:\nAssunto: {{ $('Gmail Trigger').first().json.headers?.Subject ?? $('Gmail Trigger').first().json.Subject ?? 'sem assunto' }}\nDe: {{ $('Gmail Trigger').first().json.headers?.From ?? $('Gmail Trigger').first().json.From ?? 'remetente desconhecido' }}\nMensagem: {{ $('Gmail Trigger').first().json.snippet }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        192,
+        272
+      ],
+      "id": "c58e6166-5d2d-4b53-9c19-52b92b5b0260",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        192,
+        480
+      ],
+      "id": "0b2707a2-a62c-4698-82d5-ad73a8527cdd",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "Pm5V9L3di79UFNIF",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const texto = $input.first().json.text;\n\n// Remove possíveis backticks ou markdown que a IA possa ter incluído\nconst limpo = texto.replace(/```json|```/g, \"\").trim();\n\nconst resultado = JSON.parse(limpo);\nreturn [{ json: resultado }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        272
+      ],
+      "id": "dd45cfd0-f998-47d3-8536-32629d85fce7",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        752,
+        272
+      ],
+      "id": "5992217f-5ad8-4aa1-819a-19bd946ced3a",
+      "name": "Send a text message",
+      "webhookId": "e52f6f80-33bd-4a3e-9abd-f25a25a8e8e0",
+      "credentials": {
+        "telegramApi": {
+          "id": "2yrR8yD8NqPAGF9g",
+          "name": "Telegram account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "bfa60317-2e7b-4ce3-b34f-caddb50e47bb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "70de8231bff7e03b9b76a7aaad7d5f64b00657d3df3884cd3a077ae6859efa48"
+  },
+  "id": "xh4TYq1sZLL7l3uW",
+  "tags": []
+}

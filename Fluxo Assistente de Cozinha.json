@@ -1,0 +1,160 @@
+{
+  "name": "Fluxo Assistente de Cozinha - Julia",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Telegram Trigger').item.json.message.text }}",
+        "options": {
+          "systemMessage": "Você é um assistente culinário simpático e prático. \nSua função é sugerir refeições para o dia baseadas \nnos pratos que essa família já conhece e gosta.\n\nSempre que perguntarem o que cozinhar, sugira 3 opções \nvariadas (café, almoço e jantar, ou só o que pedirem).\nConsidere variar entre as opções ao longo dos dias.\n\nLista de pratos da família:\nArroz normal, Arroz com seleta de legumes, Feijão temperado, \nMacarrão, Carne vermelha frita/assada/cozida/refogada, \nCarne branca frita/assada/cozida, Peixe empanado ou assado, \nOvo, Salada, Feijoada, Buchada, Dobradinha, Pé de galinha, \nTorresmo, Hambúrguer, Legumes refogados, Verduras refogadas, \nSopas, Churrasco, Torrada, Biscoito de polvilho, \nBolo de chocolate, Bolo de massa branca, Bolinho de chuva, \nStrogonoff, Cuscuz paulista, Salsicha, Lasanha, \nPurê de batata, Polenta.\n\nResponda sempre em português e de forma amigável."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        832,
+        -80
+      ],
+      "id": "4eec0feb-aa3c-4980-b8f0-3d0ec7c2adab",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1184,
+        -80
+      ],
+      "id": "9713b356-da66-4622-8bcf-df79ab1587d2",
+      "name": "Send a text message",
+      "webhookId": "bd2f1f09-878e-421a-a473-5373865a9981",
+      "credentials": {
+        "telegramApi": {
+          "id": "SeSOBnkZqaBzz3N6",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        832,
+        112
+      ],
+      "id": "51494939-1b27-4b28-89cd-90d7d4025064",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "jVZiCzNOqjVFkKlt",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        928,
+        272
+      ],
+      "id": "53baea5d-fddd-4a1d-bf96-7f8c7b2a4391",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        -80
+      ],
+      "id": "77af1293-bd07-4932-a787-ecdff4ab2e4c",
+      "name": "Telegram Trigger",
+      "webhookId": "2b0d6961-9e4d-4aff-aa69-848d7a87d22f",
+      "credentials": {
+        "telegramApi": {
+          "id": "SeSOBnkZqaBzz3N6",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6ffc7c93-2e11-475c-b8c0-8ab2a701743c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cc25e9b21db0bb808ac72e9e199f51088e8cccafb234a76f1477c2cc5b261078"
+  },
+  "id": "WgZaxZ9gyN4hVOgl",
+  "tags": []
+}
