@@ -1,0 +1,367 @@
+{
+  "name": "Extrator de Leads via Chat — Apify & Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "id": "4f5e7a5d-4171-4540-8197-e66fa50e8b27",
+      "name": "Wait for all results",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        0,
+        592
+      ],
+      "webhookId": "655bb8eb-9b65-4028-ae5b-0a45d87cab21",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "title",
+        "include": "selectedOtherFields",
+        "fieldsToInclude": "address, state, neighborhood, phone, emails",
+        "options": {}
+      },
+      "id": "1d16d553-282d-41fb-ad63-524a28c67eeb",
+      "name": "Split Out into Google Sheets",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        400,
+        592
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1-Z9ChYxXoykmxPAE0BCDVYVkR-EyV-r27TF2XBevzLI",
+          "mode": "list",
+          "cachedResultName": "Negócios Extraidos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1-Z9ChYxXoykmxPAE0BCDVYVkR-EyV-r27TF2XBevzLI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 991969400,
+          "mode": "list",
+          "cachedResultName": "Página3",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1-Z9ChYxXoykmxPAE0BCDVYVkR-EyV-r27TF2XBevzLI/edit#gid=991969400"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nome": "={{ $json.title }}",
+            "Telefone": "='{{ $json.phone }}",
+            "Endereço": "={{ $json.address }}",
+            "Cidade": "={{ $('Get Results (Apify)').item.json.city }}",
+            "Estado ": "={{ $json.state }}"
+          },
+          "matchingColumns": [
+            "Nome"
+          ],
+          "schema": [
+            {
+              "id": "Business_ID",
+              "displayName": "Business_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Nome",
+              "displayName": "Nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Telefone",
+              "displayName": "Telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Endereço",
+              "displayName": "Endereço",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cidade",
+              "displayName": "Cidade",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Estado ",
+              "displayName": "Estado ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CEP",
+              "displayName": "CEP",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "36e743fd-3ff3-4ce8-8b44-797529d7b483",
+      "name": "Update Scraped Information",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        576,
+        592
+      ],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "m10KSHC7wUuK1CZH",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Business Lead Generation with Apify Web Scraping and Google Sheets Storage\n- Use this tool for larger amount of leads (over 100)",
+        "height": 448,
+        "width": 1384,
+        "color": 7
+      },
+      "id": "3e4de0f4-03f8-40ca-a999-46a7c1f2ab56",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -512,
+        368
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Start the Apify Web Scraper Tool",
+        "height": 292,
+        "width": 428
+      },
+      "id": "1e2ad932-412a-4fed-b834-4bc2f06799c7",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -496,
+        496
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Get Results from Apify ",
+        "height": 292,
+        "width": 392,
+        "color": 4
+      },
+      "id": "0fe6b5b6-6110-4f6a-8358-f8e53cf27831",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        496
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "=https://api.apify.com/v2/datasets/{{ $json.data.defaultDatasetId }}/items?token=apify_api_dxgzzUURliZL2mDSjvcJaiDG90omiy3oO3df",
+        "options": {}
+      },
+      "id": "f7eff95e-b133-4d30-b718-0594e80bb19d",
+      "name": "Get Results (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        192,
+        592
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/actors/compass~crawler-google-places/runs?token=apify_api_dxgzzUURliZL2mDSjvcJaiDG90omiy3oO3df",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"includeWebResults\": false,\n    \"language\": \"pt-BR\",\n    \"locationQuery\": \"Santo André\",\n    \"maxCrawledPlacesPerSearch\": 12,\n    \"maxImages\": 0,\n    \"maximumLeadsEnrichmentRecords\": 0,\n    \"scrapeContacts\": true,\n    \"scrapeDirectories\": false,\n    \"scrapeImageAuthors\": false,\n    \"scrapePlaceDetailPage\": false,\n    \"scrapeReviewsPersonalData\": true,\n    \"scrapeTableReservationProvider\": false,\n   \"searchStringsArray\": [\n        {{ JSON.stringify($json.chatInput) }}\n    ],\n    \"skipClosedPlaces\": false\n}",
+        "options": {}
+      },
+      "id": "2ba8498b-7083-468c-a725-fcc9a2caffd2",
+      "name": "Start Results (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -224,
+        592
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "content": "## Small amount lead generation\n**Use for a smaller amount of lead Scraping**\n- Apify HTTP request",
+        "height": 376,
+        "width": 432,
+        "color": 6
+      },
+      "id": "a7ff5436-87ef-48e7-943e-e5d62f4b39b1",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -32
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Add & Organize Results Into Google Sheet",
+        "height": 292,
+        "width": 484,
+        "color": 5
+      },
+      "id": "754164a3-0690-40a4-adec-0f66e5d90214",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        368,
+        496
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/actors/compass~crawler-google-places/runs?token=apify_api_dxgzzUURliZL2mDSjvcJaiDG90omiy3oO3df",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"includeWebResults\": false,\n    \"language\": \"pt-BR\",\n    \"locationQuery\": \"Santo André\",\n    \"maxCrawledPlacesPerSearch\": 12,\n    \"maxImages\": 0,\n    \"maximumLeadsEnrichmentRecords\": 0,\n    \"scrapeContacts\": true,\n    \"scrapeDirectories\": false,\n    \"scrapeImageAuthors\": false,\n    \"scrapePlaceDetailPage\": false,\n    \"scrapeReviewsPersonalData\": true,\n    \"scrapeTableReservationProvider\": false,\n    \"searchStringsArray\": [\n        {{ JSON.stringify($json.chatInput) }}\n    ],\n    \"skipClosedPlaces\": false\n}",
+        "options": {}
+      },
+      "id": "3cfefb42-7b2f-434a-8c53-850450c86aa9",
+      "name": "Get Results (Apify)1",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        64,
+        160
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -432,
+        592
+      ],
+      "id": "565e395f-a29f-4905-9f1c-be3b6907c55e",
+      "name": "When chat message received",
+      "webhookId": "78f91fc8-96ba-4288-b783-28c7c9015e37"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get Results (Apify)": {
+      "main": [
+        [
+          {
+            "node": "Split Out into Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for all results": {
+      "main": [
+        [
+          {
+            "node": "Get Results (Apify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Results (Apify)": {
+      "main": [
+        [
+          {
+            "node": "Wait for all results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out into Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Update Scraped Information",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Start Results (Apify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ade6d590-170e-4f73-a95c-b1238ef2f085",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d4ef8e7465eebaad0028273c37719b77fa4dc7ede96e5f886866574260820169"
+  },
+  "nodeGroups": [],
+  "id": "U5BTJMcYI0FRSkNQ",
+  "tags": []
+}
