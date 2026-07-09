@@ -1,0 +1,363 @@
+{
+  "name": "LLM-Lead-Qualifie",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5f7c12f8-1aed-4675-90c0-f508e4fbaaa9",
+              "name": "IdConversa",
+              "value": "={{ $('When chat message received').item.json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "a22e9c8e-dfe5-41bc-a65c-e1a95f831b78",
+              "name": "Mensagem",
+              "value": "={{ $('AI Agent').item.json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "9006819f-6a7d-4ee9-847d-29688369cc5e",
+              "name": "Nome",
+              "value": "={{ $json.output.match(/nome=\\s*([^,\\n\\r]+)/) ? $json.output.match(/nome=\\s*([^,\\n\\r]+)/)[1].trim() : \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "64dfda0f-0b99-4ea3-9ffc-766a04a43285",
+              "name": "Telefone",
+              "value": "={{ $json.output.match(/telefone=\\s*([^,\\n\\r]+)/) ? $json.output.match(/telefone=\\s*([^,\\n\\r]+)/)[1].trim() : \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "f2e21bc1-5299-46b7-9f23-1eca2ce9c9f5",
+              "name": "Regiao",
+              "value": "={{ $json.output.match(/região=\\s*([^,\\n\\r]+)/) ? $json.output.match(/região=\\s*([^,\\n\\r]+)/)[1].trim() : \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "8e2d7694-4173-4d63-9d11-086ea1233a67",
+              "name": "Tamanho_Ambiente",
+              "value": "={{ $json.output.match(/medidas=\\s*([^,\\n\\r]+)/) ? $json.output.match(/medidas=\\s*([^,\\n\\r]+)/)[1].trim() : \"\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        432,
+        48
+      ],
+      "id": "317b8071-7194-4081-8d40-dcb733e2045f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1DQg_RqHOvzuU4vlUdis3tc99dm-YFZpaxkWEiPf40W8",
+          "mode": "list",
+          "cachedResultName": "Planilha Teste",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DQg_RqHOvzuU4vlUdis3tc99dm-YFZpaxkWEiPf40W8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DQg_RqHOvzuU4vlUdis3tc99dm-YFZpaxkWEiPf40W8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nome": "={{ $json.Nome }}",
+            "Telefone": "={{ $json.Telefone }}",
+            "Regiao": "={{ $json.Regiao }}",
+            "IdConversa": "={{ $json.IdConversa }}",
+            "Tamanho do Ambiente": "={{ $json.Tamanho_Ambiente }}",
+            "Status": "Aguardando contato"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "IdConversa",
+              "displayName": "IdConversa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Nome",
+              "displayName": "Nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Telefone",
+              "displayName": "Telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Regiao",
+              "displayName": "Regiao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Tamanho do Ambiente",
+              "displayName": "Tamanho do Ambiente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        624,
+        48
+      ],
+      "id": "621aebe5-09ee-4a0c-abf9-09c420182f52",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "m10KSHC7wUuK1CZH",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "Você é um assistente virtual da empresa Senhor Gesso, especializada em drywall, gesso, isolamento acústico, pintura e elétrica.\n\nSeu objetivo é coletar as informações necessárias para que a equipe possa preparar um orçamento personalizado.\n\nFaça as perguntas UMA POR VEZ, de forma simpática e profissional:\n\n1. Nome do cliente\n2. Telefone para contato\n3. Região/cidade da obra\n4. Tipo de serviço desejado (parede, forro, acústico, pintura, elétrica ou outro)\n5. Medidas aproximadas do ambiente (ex: 4m x 5m, ou apenas os metros quadrados como 50m², ou se é um quarto/sala) — se não souber, tudo bem\"\n6. Possui planta ou foto do local? (sim ou não)\nSe o cliente disser que tem foto ou planta, apenas registre essa informação (ex: foto=sim) e prossiga para o encerramento. Nunca peça para o cliente enviar o arquivo pelo chat, diga apenas que a equipe humana vai solicitar depois\n\nQuando tiver coletado TODAS as informações, responda EXATAMENTE assim:\n\"DADOS_COMPLETOS: nome=[nome], telefone=[telefone], região=[região], serviço=[serviço], medidas=[medidas], planta=[sim/não]\"\n\nREGRAS DE INFORMAÇÕES COMERCIAIS (NÃO INVENTE)\n\nIMPORTANTE:\nVocê nunca deve inventar informações comerciais, operacionais ou financeiras.\n\nFORMAS DE PAGAMENTO:\nSe o cliente perguntar sobre pagamento, preços, parcelamento, descontos ou condições comerciais:\n\n- responda apenas com informações previamente definidas pela empresa;\n- se essas informações não estiverem disponíveis no contexto atual, responda:\n\n\"As formas de pagamento, valores finais e condições comerciais são alinhados diretamente com a equipe responsável após a avaliação do espaço e montagem do orçamento.\"\n\nNUNCA:\n\n- invente descontos;\n- invente parcelamento;\n- invente valores;\n- invente prazos;\n- invente formas de pagamento;\n- invente promoções;\n- invente serviços não confirmados.\n\nSe o cliente insistir:\nresponda educadamente que a equipe humana confirmará essas informações posteriormente.\n\nPrioridade:\nInformação ausente → encaminhar para equipe humana.\nNunca preencher lacunas com criatividade.\n\nSe perguntarem sobre o tamanho máximo de área, diga que atendemos desde pequenos cômodos residenciais até grandes espaços comerciais, e que o limite é avaliado no projeto.\n\nSeja sempre simpático, breve e objetivo."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -80,
+        64
+      ],
+      "id": "e0f9902d-b286-4ff2-9fd4-e9fca2e69207",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        272
+      ],
+      "id": "652b9082-7279-448e-8f45-1927189d84a2",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "leeUpP1beX48Ceqo",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        16,
+        288
+      ],
+      "id": "a17c6fd7-d94c-4b85-8408-b969689f9862",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -288,
+        64
+      ],
+      "id": "bd822b7e-2bcf-4d28-9361-862044294e61",
+      "name": "When chat message received",
+      "webhookId": "5a240140-20f3-40e8-b237-214c964e96f5"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "DADOS_COMPLETOS:",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "d59ccbb2-33c5-44a0-b138-a960f59151e7"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Salvar no Sheets"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        64
+      ],
+      "id": "2b224edc-a11c-4bb4-a2db-140d328b6b01",
+      "name": "Switch"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d050041a-0129-4399-ba49-acbbef50f8c0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d4ef8e7465eebaad0028273c37719b77fa4dc7ede96e5f886866574260820169"
+  },
+  "nodeGroups": [],
+  "id": "n0siiujcUoXjnxss",
+  "tags": []
+}
