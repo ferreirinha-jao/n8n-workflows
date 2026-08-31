@@ -1,0 +1,429 @@
+{
+  "name": "CRM Telegram - Acompanhamento de Leads",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a planilha de Leads (CRM WhatsApp)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a aba (ex.: Leads)"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "id": "b4f6b659-6502-45d3-8702-92e0dcfc9377",
+      "name": "Novo Lead Adicionado",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        64
+      ],
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "ZFtBkYkOCMrWzcB5",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = ($json['Telefone'] ?? '').toString();\nlet digits = raw.replace(/\\D/g, '');\nif (digits.length && !digits.startsWith('55')) { digits = '55' + digits; }\nconst telefone = digits ? '+' + digits : '';\nconst fmt = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });\nconst parts = fmt.formatToParts(new Date());\nconst get = (t) => (parts.find((p) => p.type === t) || {}).value || '';\nconst dataHora = get('day') + '/' + get('month') + '/' + get('year') + ' ' + get('hour') + ':' + get('minute');\nreturn { json: { ...$json, Telefone: telefone, Status: 'Abordado', 'Data de Atualização': dataHora } };"
+      },
+      "id": "e159fb2f-4d2c-437b-9757-6b41f4430963",
+      "name": "Padronizar Dados do Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a planilha de Leads (CRM WhatsApp)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a aba (ex.: Leads)"
+        }
+      },
+      "id": "c41fa2a5-4ab2-475e-9f71-616c685c8593",
+      "name": "Salvar Lead Padronizado",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        384,
+        64
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kTbNTgh5oGDbOrHK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "streaming"
+        }
+      },
+      "id": "6a1eb9cc-dc23-4d70-8af0-f4c0eccec15d",
+      "name": "Gestão via Chat",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -16,
+        288
+      ],
+      "webhookId": "9e09f62a-b891-4a7b-b2fe-e8f7cdd3b368"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Você é um assistente de CRM para acompanhamento de leads de WhatsApp, integrado a uma planilha do Google Sheets.\n\nFERRAMENTAS DISPONÍVEIS:\n- \"buscar_leads\": lê todas as linhas da planilha. Use para localizar um lead (por telefone ou nome) e para responder métricas (ex.: quantos leads estão em determinado status).\n- \"atualizar_status_lead\": atualiza o status de um lead existente, correspondendo pela coluna Telefone.\n- \"notificar_telegram\": envia uma mensagem no Telegram. Use APENAS quando o usuário pedir explicitamente uma notificação/resumo.\n\nSTATUS VÁLIDOS (use exatamente estes valores): \"Em conversa\", \"Reunião agendada\", \"Proposta enviada\", \"Fechado\", \"Sem interesse\".\n\nREGRAS DE ATUALIZAÇÃO:\n1. Sempre chame \"buscar_leads\" primeiro para localizar o lead pelo telefone ou nome informado.\n2. Normalize o telefone para o formato internacional +55DDDNUMERO (apenas dígitos após o +55) antes de comparar e antes de chamar \"atualizar_status_lead\".\n3. Se encontrar o lead, chame \"atualizar_status_lead\" com o Telefone normalizado e o novo Status normalizado para um dos valores válidos.\n4. Se o telefone/nome NÃO for localizado na planilha, NÃO crie um novo lead: informe claramente ao usuário que o lead não foi encontrado e peça para confirmar o telefone ou nome.\n5. Se o status informado não corresponder a nenhum válido, peça esclarecimento e liste as opções válidas.\n6. NÃO envie alertas de \"Reunião agendada\" ou \"Fechado\" manualmente — esses alertas urgentes são disparados automaticamente por outro fluxo.\n\nMÉTRICAS: para perguntas como \"quantos leads estão em Proposta enviada?\", use \"buscar_leads\", conte as linhas cujo Status corresponde e responda com o número e, se útil, a lista de nomes.\n\nResponda sempre em português, de forma objetiva, confirmando o telefone e o status após cada atualização."
+        }
+      },
+      "id": "59399a18-357d-44bb-aaa5-1cbc0a2b68b0",
+      "name": "Agente CRM (Groq)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "2cf9da3b-f60a-4c3c-abb8-857d50d9b98a",
+      "name": "Groq Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        208,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a planilha de Leads (CRM WhatsApp)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a aba (ex.: Leads)"
+        }
+      },
+      "id": "28c3b544-995e-4a00-aabb-394ff2358560",
+      "name": "buscar_leads",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        352,
+        752
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kTbNTgh5oGDbOrHK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a planilha de Leads (CRM WhatsApp)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a aba (ex.: Leads)"
+        }
+      },
+      "id": "5311e62a-46dc-4e1b-b456-1fd14aec7bd0",
+      "name": "atualizar_status_lead",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        352,
+        560
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kTbNTgh5oGDbOrHK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "<__PLACEHOLDER_VALUE__Telegram chat ID para notificações__>",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Mensagem', 'Texto da notificação a enviar no Telegram') }}",
+        "additionalFields": {}
+      },
+      "id": "6f006507-a29e-4a7d-ad83-ae13248684e0",
+      "name": "notificar_telegram",
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        400
+      ],
+      "webhookId": "60b0a625-dce9-4430-abe0-6416963187d9"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a planilha de Leads (CRM WhatsApp)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a aba (ex.: Leads)"
+        },
+        "options": {
+          "columnsToWatch": [
+            "Status"
+          ]
+        }
+      },
+      "id": "576ac170-0a9f-4c3e-82a0-46df65726e30",
+      "name": "Status Alterado",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        720
+      ],
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "ZFtBkYkOCMrWzcB5",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "or",
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-reuniao",
+              "leftValue": "={{ $json[\"Status\"] }}",
+              "rightValue": "Reunião agendada",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "cond-fechado",
+              "leftValue": "={{ $json[\"Status\"] }}",
+              "rightValue": "Fechado",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "46a3e1a5-a78b-4af5-a328-a245c4b39945",
+      "name": "Status Urgente?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        176,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "<__PLACEHOLDER_VALUE__Telegram chat ID para alertas__>",
+        "text": "=🚨 <b>Alerta de Lead — {{ $json[\"Status\"] }}</b>\n\n👤 Nome: {{ $json[\"Nome\"] }}\n📱 Telefone: {{ $json[\"Telefone\"] }}\n🏢 Tipo de Negócio: {{ $json[\"Tipo de Negócio\"] }}\n🕒 Atualizado em: {{ $json[\"Data de Atualização\"] }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "bfb03c39-7e75-40c0-8346-7751f82ec8e9",
+      "name": "Alerta Urgente Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        528,
+        704
+      ],
+      "webhookId": "01bd92af-df4d-4f39-8072-0e7f7bcbddd1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Novo Lead Adicionado": {
+      "main": [
+        [
+          {
+            "node": "Padronizar Dados do Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Padronizar Dados do Lead": {
+      "main": [
+        [
+          {
+            "node": "Salvar Lead Padronizado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gestão via Chat": {
+      "main": [
+        [
+          {
+            "node": "Agente CRM (Groq)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente CRM (Groq)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "buscar_leads": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente CRM (Groq)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "atualizar_status_lead": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente CRM (Groq)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "notificar_telegram": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente CRM (Groq)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status Alterado": {
+      "main": [
+        [
+          {
+            "node": "Status Urgente?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status Urgente?": {
+      "main": [
+        [
+          {
+            "node": "Alerta Urgente Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f406befb-ec1e-47ee-8560-306d54a71dc6",
+  "meta": {
+    "instanceId": "830215570898cbc950f5b879f6f663fa488e31605bddec65315cae501add492e"
+  },
+  "nodeGroups": [],
+  "id": "ACTYgaWhNva7zIuq",
+  "tags": []
+}
