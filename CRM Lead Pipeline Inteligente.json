@@ -1,0 +1,776 @@
+{
+  "name": "CRM Lead Pipeline Inteligente",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "streaming"
+        }
+      },
+      "id": "dbc4dec7-cdd8-444b-86b7-649ba8dd1edb",
+      "name": "Receber Lead (Chat)",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        160
+      ],
+      "webhookId": "2f6b806c-f8e7-429c-b2ea-d135e2e3aa15"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Você é um SDR (assistente de pré-vendas) simpático e objetivo. Seu objetivo é qualificar o lead conversando de forma natural, uma pergunta por vez.\n\nColete ao longo da conversa:\n1. Nome, telefone e origem do lead (se ainda não foram informados)\n2. Qual o principal problema ou necessidade\n3. Qual o orçamento aproximado\n4. Qual a urgência\n5. Se já usou soluções parecidas antes\n\nRegras:\n- Faça apenas UMA pergunta por mensagem e seja breve.\n- Não repita perguntas cujas respostas já foram dadas.\n- Quando tiver todas as informações, agradeça e finalize a conversa educadamente, dizendo que a equipe dará sequência.\n- Nunca invente dados. Se o lead não responder algo, siga em frente sem forçar."
+        }
+      },
+      "id": "e144c1e8-34a3-4a65-bc52-2f77b01e65cc",
+      "name": "Agente de Qualificação",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "ca123dd0-ad9b-422f-8363-dc8ca0af3bdc",
+      "name": "Modelo Qualificação",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 20
+      },
+      "id": "e1588a3a-4628-473f-92a1-ccf49d3dc3a3",
+      "name": "Memória da Conversa",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        368,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analise TODA a conversa de qualificação com o lead (disponível na memória) e extraia as informações estruturadas. Última mensagem do lead: {{ $('Receber Lead (Chat)').item.json.chatInput }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Você é um analista de CRM. Com base na conversa completa com o lead, extraia e classifique as informações.\n\nRegras de preenchimento:\n- \"qualificado\": defina true SOMENTE quando já houver informação suficiente sobre problema, orçamento e urgência. Caso contrário, false.\n- Se algum campo não foi informado, use \"Não informado\" (texto) ou deixe descritivo. Nunca invente.\n- \"classificacao\": \"Quente\", \"Morno\" ou \"Frio\", coerente com o score (>=70 Quente, 40-69 Morno, <40 Frio).\n- \"tipo_cliente\": \"Novo\", \"Recorrente\" ou \"Problematico\".\n- \"score\": número inteiro de 0 a 100 considerando aderência do problema, orçamento e urgência.\n- \"resumo\": resumo curto (1-2 frases) do lead.",
+          "enableStreaming": false
+        }
+      },
+      "id": "de0d8d4a-63b9-4cc4-9540-b49246056a94",
+      "name": "Extrair e Classificar Lead",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        576,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "1a518c26-f963-46dd-ae53-b497afc0e58d",
+      "name": "Modelo Extração",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"qualificado\": true,\n  \"nome\": \"João Silva\",\n  \"telefone\": \"+55 11 99999-0000\",\n  \"origem\": \"Instagram\",\n  \"problema\": \"Precisa automatizar atendimento no WhatsApp\",\n  \"orcamento\": \"R$ 5.000\",\n  \"urgencia\": \"Alta - quer começar este mês\",\n  \"ja_usou_antes\": \"Sim, usou uma ferramenta parecida\",\n  \"classificacao\": \"Quente\",\n  \"tipo_cliente\": \"Novo\",\n  \"score\": 82,\n  \"resumo\": \"Lead novo, problema claro, orçamento definido e urgência alta.\"\n}"
+      },
+      "id": "ca0aa934-ace1-4552-974f-ad8d8dd0e0be",
+      "name": "Formato do Lead",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        720,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "is-qualified",
+              "leftValue": "={{ $json.output.qualificado }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "bfd1fa63-0baa-43d9-8be1-55657e0966a2",
+      "name": "Lead Qualificado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        640,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f-data",
+              "name": "Data",
+              "type": "string",
+              "value": "={{ $now.toFormat(\"yyyy-MM-dd HH:mm\") }}"
+            },
+            {
+              "id": "f-nome",
+              "name": "Nome",
+              "type": "string",
+              "value": "={{ $json.output.nome }}"
+            },
+            {
+              "id": "f-tel",
+              "name": "Telefone",
+              "type": "string",
+              "value": "={{ $json.output.telefone }}"
+            },
+            {
+              "id": "f-origem",
+              "name": "Origem",
+              "type": "string",
+              "value": "={{ $json.output.origem }}"
+            },
+            {
+              "id": "f-prob",
+              "name": "Problema",
+              "type": "string",
+              "value": "={{ $json.output.problema }}"
+            },
+            {
+              "id": "f-orc",
+              "name": "Orçamento",
+              "type": "string",
+              "value": "={{ $json.output.orcamento }}"
+            },
+            {
+              "id": "f-urg",
+              "name": "Urgência",
+              "type": "string",
+              "value": "={{ $json.output.urgencia }}"
+            },
+            {
+              "id": "f-class",
+              "name": "Classificação",
+              "type": "string",
+              "value": "={{ $json.output.classificacao }}"
+            },
+            {
+              "id": "f-tipo",
+              "name": "Tipo Cliente",
+              "type": "string",
+              "value": "={{ $json.output.tipo_cliente }}"
+            },
+            {
+              "id": "f-score",
+              "name": "Score",
+              "type": "number",
+              "value": "={{ $json.output.score }}"
+            },
+            {
+              "id": "f-resumo",
+              "name": "Resumo",
+              "type": "string",
+              "value": "={{ $json.output.resumo }}"
+            },
+            {
+              "id": "f-status",
+              "name": "Status",
+              "type": "string",
+              "value": "={{ $json.output.score >= 70 ? \"Pronto para contato\" : ($json.output.score >= 40 ? \"Nutrição\" : \"Frio\") }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6e7fbb7b-6580-4134-ba69-e7012ca414c0",
+      "name": "Preparar Linha do CRM",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        880,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a planilha de Leads do CRM"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Telefone"
+          ],
+          "schema": [
+            {
+              "id": "Data",
+              "displayName": "Data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Nome",
+              "displayName": "Nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Telefone",
+              "displayName": "Telefone",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Origem",
+              "displayName": "Origem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Problema",
+              "displayName": "Problema",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Orçamento",
+              "displayName": "Orçamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Urgência",
+              "displayName": "Urgência",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Classificação",
+              "displayName": "Classificação",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Score",
+              "displayName": "Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Resumo",
+              "displayName": "Resumo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "97821787-28f3-4d48-8158-5ea76caea76a",
+      "name": "Salvar no Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1296,
+        144
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kTbNTgh5oGDbOrHK",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "hot",
+                    "leftValue": "={{ $json.Score }}",
+                    "rightValue": 70,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Quente (>=70)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "warm-low",
+                    "leftValue": "={{ $json.Score }}",
+                    "rightValue": 40,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    }
+                  },
+                  {
+                    "id": "warm-high",
+                    "leftValue": "={{ $json.Score }}",
+                    "rightValue": 70,
+                    "operator": {
+                      "type": "number",
+                      "operation": "lt"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Morno (40-69)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "cold",
+                    "leftValue": "={{ $json.Score }}",
+                    "rightValue": 40,
+                    "operator": {
+                      "type": "number",
+                      "operation": "lt"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Frio (<40)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4312c082-d64c-4a4a-ba48-47039e9c9c83",
+      "name": "Rotear por Score",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1824,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "<__PLACEHOLDER_VALUE__Seu chat ID do Telegram (para logs/erros)__>",
+        "text": "=⚠️ Erro no CRM Lead Pipeline\n\nExecução: {{ $execution.id }}\nLead: {{ $json.Nome }} ({{ $json.Telefone }})\nFalha ao salvar no Google Sheets. Verifique a planilha/credenciais.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "21001a35-1208-4685-bb0d-77809980092d",
+      "name": "Notificar Erro (Log)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1568,
+        160
+      ],
+      "webhookId": "229b37aa-0a2d-4f53-8220-c4c47483d26a"
+    },
+    {
+      "parameters": {},
+      "id": "13fad31b-216a-4756-be4f-193268cf74bf",
+      "name": "Aguardar Mais Respostas",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "<__PLACEHOLDER_VALUE__Seu chat ID do Telegram (notificações)__>",
+        "text": "=🔥 LEAD QUENTE ({{ $json.Score }}/100)\n\n👤 {{ $json.Nome }}\n📞 {{ $json.Telefone }}\n🌐 Origem: {{ $json.Origem }}\n\n🧩 Problema: {{ $json.Problema }}\n💰 Orçamento: {{ $json.Orçamento }}\n⏱️ Urgência: {{ $json.Urgência }}\n🏷️ Tipo: {{ $json[\"Tipo Cliente\"] }}\n\n📝 {{ $json.Resumo }}\n\n✅ Status: {{ $json.Status }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "6ab6eb52-5b9e-4df1-834e-59e0e2d09e97",
+      "name": "Notificar Lead Quente",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2048,
+        272
+      ],
+      "webhookId": "fd04f166-4cb3-4f27-8992-41f149c1160e"
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "days"
+      },
+      "id": "0a362177-d290-4658-b174-c3176a6a6afb",
+      "name": "Aguardar 2 Dias (Follow-up)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2048,
+        464
+      ],
+      "webhookId": "3c8c3e16-9fc2-4015-a466-7006dcdeecf2"
+    },
+    {
+      "parameters": {
+        "chatId": "<__PLACEHOLDER_VALUE__Seu chat ID do Telegram (notificações)__>",
+        "text": "=🌡️ FOLLOW-UP (Lead Morno {{ $json.Score }}/100)\n\n👤 {{ $json.Nome }} — 📞 {{ $json.Telefone }}\n🧩 {{ $json.Problema }}\n📝 {{ $json.Resumo }}\n\nHora de nutrir este lead. Status: {{ $json.Status }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "0ff06858-237e-4443-b0a4-04bb5b4b93a7",
+      "name": "Follow-up Lead Morno",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2272,
+        464
+      ],
+      "webhookId": "15b3c1ba-f73d-41f9-b6dd-3b3eea01e598"
+    },
+    {
+      "parameters": {},
+      "id": "69992b77-0e5b-4e78-a653-5e90988b0f9c",
+      "name": "Lead Frio (Sem Ação)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2048,
+        656
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receber Lead (Chat)": {
+      "main": [
+        [
+          {
+            "node": "Agente de Qualificação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente de Qualificação": {
+      "main": [
+        [
+          {
+            "node": "Extrair e Classificar Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Modelo Qualificação": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente de Qualificação",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória da Conversa": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente de Qualificação",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Extrair e Classificar Lead",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair e Classificar Lead": {
+      "main": [
+        [
+          {
+            "node": "Lead Qualificado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Modelo Extração": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extrair e Classificar Lead",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formato do Lead": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Extrair e Classificar Lead",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Qualificado?": {
+      "main": [
+        [
+          {
+            "node": "Preparar Linha do CRM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aguardar Mais Respostas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Linha do CRM": {
+      "main": [
+        [
+          {
+            "node": "Salvar no Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Rotear por Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar no Google Sheets": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Notificar Erro (Log)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rotear por Score": {
+      "main": [
+        [
+          {
+            "node": "Notificar Lead Quente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aguardar 2 Dias (Follow-up)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Lead Frio (Sem Ação)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aguardar 2 Dias (Follow-up)": {
+      "main": [
+        [
+          {
+            "node": "Follow-up Lead Morno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ccceb73e-9143-4ff5-bd79-f41aa4db0cc6",
+  "meta": {
+    "instanceId": "830215570898cbc950f5b879f6f663fa488e31605bddec65315cae501add492e"
+  },
+  "nodeGroups": [
+    {
+      "id": "92070e37-783d-445d-80f2-0dfdc6f1cd91",
+      "name": "Qualificação com IA",
+      "nodeIds": [
+        "e144c1e8-34a3-4a65-bc52-2f77b01e65cc",
+        "ca123dd0-ad9b-422f-8363-dc8ca0af3bdc",
+        "e1588a3a-4628-473f-92a1-ccf49d3dc3a3",
+        "de0d8d4a-63b9-4cc4-9540-b49246056a94",
+        "1a518c26-f963-46dd-ae53-b497afc0e58d",
+        "ca0aa934-ace1-4552-974f-ad8d8dd0e0be"
+      ],
+      "description": "Agente conversa com o lead e um segundo agente extrai e classifica os dados."
+    },
+    {
+      "id": "9b8f044c-92db-43f9-9120-fe7848987fc4",
+      "name": "Roteamento por Score",
+      "nodeIds": [
+        "4312c082-d64c-4a4a-ba48-47039e9c9c83",
+        "6ab6eb52-5b9e-4df1-834e-59e0e2d09e97",
+        "0a362177-d290-4658-b174-c3176a6a6afb",
+        "0ff06858-237e-4443-b0a4-04bb5b4b93a7",
+        "69992b77-0e5b-4e78-a653-5e90988b0f9c"
+      ],
+      "description": "Quente notifica no Telegram; Morno agenda follow-up em 2 dias; Frio apenas registra."
+    }
+  ],
+  "id": "C4AMTp5clU7GkBx4",
+  "tags": []
+}
