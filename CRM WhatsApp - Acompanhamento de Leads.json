@@ -1,0 +1,198 @@
+{
+  "name": "CRM WhatsApp - Acompanhamento de Leads",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a planilha de Leads (CRM WhatsApp)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a aba (ex.: Leads)"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "id": "b4f6b659-6502-45d3-8702-92e0dcfc9377",
+      "name": "Novo Lead Adicionado",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a planilha de Leads (CRM WhatsApp)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a aba (ex.: Leads)"
+        }
+      },
+      "id": "4eeffd6c-5108-4f7e-8803-1cf1614d9b76",
+      "name": "Definir Status Abordado",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "streaming"
+        }
+      },
+      "id": "c295070f-3ff5-4fca-bd96-b6ba3a3ee723",
+      "name": "Atualizar Status via Chat",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        336
+      ],
+      "webhookId": "3c20cfd4-f212-46a8-be5e-22368d041680"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Você é um assistente de CRM para acompanhamento de leads de WhatsApp. O usuário informará um número de telefone e um novo status. Os status válidos são exatamente: \"Em conversa\", \"Reunião agendada\", \"Proposta enviada\", \"Fechado\", \"Sem interesse\". Interprete a mensagem, normalize o status para um dos valores válidos e use a ferramenta \"atualizar_status_lead\" para atualizar a linha do lead correspondente (correspondência pelo campo Telefone) na planilha do Google Sheets. Após atualizar, confirme em português qual telefone foi atualizado e para qual status. Se o status informado não corresponder a nenhum válido, peça esclarecimento e liste as opções válidas."
+        }
+      },
+      "id": "033401df-d152-4f16-9872-f920ba39d8b3",
+      "name": "Agente Atualizador de Status",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini",
+          "cachedResultName": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "71b9d931-ab6d-4240-9598-8a9a308e3407",
+      "name": "Modelo OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a planilha de Leads (CRM WhatsApp)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Selecione a aba (ex.: Leads)"
+        }
+      },
+      "id": "5311e62a-46dc-4e1b-b456-1fd14aec7bd0",
+      "name": "atualizar_status_lead",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        368,
+        560
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Novo Lead Adicionado": {
+      "main": [
+        [
+          {
+            "node": "Definir Status Abordado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar Status via Chat": {
+      "main": [
+        [
+          {
+            "node": "Agente Atualizador de Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Modelo OpenAI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Atualizador de Status",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "atualizar_status_lead": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Atualizador de Status",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b469593f-996a-401a-b527-ce224af3db2c",
+  "meta": {
+    "instanceId": "830215570898cbc950f5b879f6f663fa488e31605bddec65315cae501add492e"
+  },
+  "nodeGroups": [],
+  "id": "ACTYgaWhNva7zIuq",
+  "tags": []
+}
