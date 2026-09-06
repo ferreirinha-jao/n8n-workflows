@@ -1,0 +1,491 @@
+{
+  "name": "Pipeline B2B - Geração e Enriquecimento de Leads",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "lastNode"
+        }
+      },
+      "id": "cc645af9-ccd6-442d-9919-a425766697b8",
+      "name": "Chat - Termo de Busca",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        192
+      ],
+      "webhookId": "7990e94b-a66d-4d81-829c-01d441ae9497"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/compass~crawler-google-places/runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpTemplatedCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"searchStringsArray\": [\"{{ $json.chatInput }}\"],\n  \"maxCrawledPlacesPerSearch\": 15,\n  \"language\": \"pt-BR\"\n}",
+        "options": {}
+      },
+      "id": "47870f92-bbba-4f19-936f-790036e189c6",
+      "name": "Apify - Executar Ator",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        192
+      ],
+      "credentials": {
+        "httpTemplatedCustomAuth": {
+          "id": "hdKiJ3J3HVbJEJea",
+          "name": "Apify API Token (joao)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 90
+      },
+      "id": "67ab12c3-8cd5-4f65-a864-bba3bd16bc44",
+      "name": "Aguardar Conclusão",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        192
+      ],
+      "webhookId": "69d4e02d-0184-4c7a-a6a3-6d19884c75a9"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.apify.com/v2/datasets/{{ $json.data.defaultDatasetId }}/items?format=json&clean=true",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpTemplatedCustomAuth",
+        "options": {}
+      },
+      "id": "13c3b1da-9fb6-4753-bcbf-9e552c665a13",
+      "name": "Apify - Obter Leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        672,
+        192
+      ],
+      "credentials": {
+        "httpTemplatedCustomAuth": {
+          "id": "hdKiJ3J3HVbJEJea",
+          "name": "Apify API Token (joao)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "resp1",
+              "name": "output",
+              "type": "string",
+              "value": "=✅ Pipeline concluído! Processei os leads encontrados para \"{{ $('Chat - Termo de Busca').item.json.chatInput }}\", enriqueci cada um com IA, salvei na planilha e enviei os alertas no Telegram."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b41bdb23-332a-4fe2-bdc4-6d615ebe8760",
+      "name": "Resposta Chat",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1072,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "groqApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"openai/gpt-oss-120b\",\n  \"temperature\": 0.7,\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Você é um assistente de qualificação de leads B2B. Receberá o nome comercial e a categoria de uma empresa. Responda SEMPRE em JSON válido com exatamente estas chaves: nome_limpo (o nome comercial limpo, sem termos jurídicos como LTDA/ME/EIRELI e sem sufixos de categoria), categoria (categoria de negócio resumida), qualificado (\\\\\"Sim\\\\\" ou \\\\\"Não\\\\\", indicando se é um lead B2B relevante para prospecção), mensagem_abordagem (uma mensagem curta, amigável e personalizada para WhatsApp iniciando o contato).\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": {{ JSON.stringify('Nome da empresa: ' + ($('Loop Over Items').item.json.title || 'Não informado') + '\\nCategoria: ' + ($('Loop Over Items').item.json.categoryName || 'Não informado')) }}\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "cd9f967b-7564-403a-94da-c74e5502a725",
+      "name": "Groq - Enriquecer Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1168,
+        208
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "UV1fCAI4MB7EBikT",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "Nome Limpo",
+              "type": "string",
+              "value": "={{ JSON.parse($('Groq - Enriquecer Lead').item.json.choices[0].message.content).nome_limpo }}"
+            },
+            {
+              "id": "c2",
+              "name": "Categoria",
+              "type": "string",
+              "value": "={{ JSON.parse($('Groq - Enriquecer Lead').item.json.choices[0].message.content).categoria }}"
+            },
+            {
+              "id": "c3",
+              "name": "Telefone",
+              "type": "string",
+              "value": "={{ ($('Loop Over Items').item.json.phone || 'Não informado').toString().replace(/[+=]/g, '') }}"
+            },
+            {
+              "id": "c4",
+              "name": "Qualificado",
+              "type": "string",
+              "value": "={{ JSON.parse($('Groq - Enriquecer Lead').item.json.choices[0].message.content).qualificado }}"
+            },
+            {
+              "id": "c5",
+              "name": "Mensagem de Abordagem",
+              "type": "string",
+              "value": "={{ JSON.parse($('Groq - Enriquecer Lead').item.json.choices[0].message.content).mensagem_abordagem }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "978f4534-dcf9-4b7d-953e-ed8927de710e",
+      "name": "Preparar Linha",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1344,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1ptTEqJULgDdj8ko-wXaD1goq7OQOXk8Ruvtu0tDdxKw",
+          "cachedResultName": "Pipeline de Leads B2B",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ptTEqJULgDdj8ko-wXaD1goq7OQOXk8Ruvtu0tDdxKw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ptTEqJULgDdj8ko-wXaD1goq7OQOXk8Ruvtu0tDdxKw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "schema": [
+            {
+              "id": "Nome Limpo",
+              "displayName": "Nome Limpo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Categoria",
+              "displayName": "Categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Telefone",
+              "displayName": "Telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Qualificado",
+              "displayName": "Qualificado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Mensagem de Abordagem",
+              "displayName": "Mensagem de Abordagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "matchingColumns": [
+            "Nome Limpo"
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "insertInNewColumn"
+        }
+      },
+      "id": "317b5692-6654-4800-b5f6-1ac02318d9e8",
+      "name": "Google Sheets - Salvar Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1536,
+        208
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kTbNTgh5oGDbOrHK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "q1",
+              "leftValue": "={{ $('Preparar Linha').item.json.Qualificado }}",
+              "rightValue": "Sim",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d16fd58c-8553-4491-b804-ea6f60213e95",
+      "name": "Filtrar Qualificado",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1760,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "8099580676",
+        "text": "=🎯 <b>Novo lead qualificado!</b>\n\n<b>Empresa:</b> {{ JSON.parse($('Groq - Enriquecer Lead').item.json.choices[0].message.content).nome_limpo }}\n<b>Categoria:</b> {{ JSON.parse($('Groq - Enriquecer Lead').item.json.choices[0].message.content).categoria }}\n<b>Telefone:</b> {{ $('Loop Over Items').item.json.phone || 'Não informado' }}\n<b>Qualificado:</b> {{ JSON.parse($('Groq - Enriquecer Lead').item.json.choices[0].message.content).qualificado }}\n\n💬 <b>Abordagem sugerida:</b>\n{{ JSON.parse($('Groq - Enriquecer Lead').item.json.choices[0].message.content).mensagem_abordagem }}\n\n✅ Salvo na planilha do Google Sheets.",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "ca30b8d6-d923-45b5-9642-44ae8bfd8733",
+      "name": "Telegram - Alerta",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2000,
+        208
+      ],
+      "webhookId": "78dc3fda-4a7e-400a-9c69-0ca5ccf42eeb",
+      "credentials": {
+        "telegramApi": {
+          "id": "eP9EIbNFLTh68zC4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "07ef2016-82d7-40f1-885a-62816ec7db28",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        960,
+        192
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Chat - Termo de Busca": {
+      "main": [
+        [
+          {
+            "node": "Apify - Executar Ator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify - Executar Ator": {
+      "main": [
+        [
+          {
+            "node": "Aguardar Conclusão",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aguardar Conclusão": {
+      "main": [
+        [
+          {
+            "node": "Apify - Obter Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify - Obter Leads": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq - Enriquecer Lead": {
+      "main": [
+        [
+          {
+            "node": "Preparar Linha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Linha": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Salvar Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Salvar Lead": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Qualificado",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar Qualificado": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Alerta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Resposta Chat",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Groq - Enriquecer Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a22c45eb-0e2b-4a1b-8b34-52fd3dfb54e7",
+  "meta": {
+    "instanceId": "830215570898cbc950f5b879f6f663fa488e31605bddec65315cae501add492e"
+  },
+  "nodeGroups": [
+    {
+      "id": "75f872d2-8037-46d9-81df-ce4b2eb85fff",
+      "name": "Ingestão de Leads (Apify)",
+      "nodeIds": [
+        "47870f92-bbba-4f19-936f-790036e189c6",
+        "67ab12c3-8cd5-4f65-a864-bba3bd16bc44",
+        "13c3b1da-9fb6-4753-bcbf-9e552c665a13"
+      ],
+      "description": "Executa o ator do Apify no Google Maps e coleta os leads brutos do dataset."
+    },
+    {
+      "id": "0e20a673-a60d-4e49-ad83-a2ebe9fda4fd",
+      "name": "Enriquecimento e Distribuição",
+      "nodeIds": [
+        "07ef2016-82d7-40f1-885a-62816ec7db28",
+        "cd9f967b-7564-403a-94da-c74e5502a725",
+        "978f4534-dcf9-4b7d-953e-ed8927de710e",
+        "317b5692-6654-4800-b5f6-1ac02318d9e8",
+        "d16fd58c-8553-4491-b804-ea6f60213e95",
+        "ca30b8d6-d923-45b5-9642-44ae8bfd8733",
+        "b41bdb23-332a-4fe2-bdc4-6d615ebe8760"
+      ],
+      "description": "Itera lead por lead, enriquece com IA (Groq), salva no Google Sheets e alerta no Telegram."
+    }
+  ],
+  "id": "TtuaDh8lEhy0bF6d",
+  "tags": []
+}
