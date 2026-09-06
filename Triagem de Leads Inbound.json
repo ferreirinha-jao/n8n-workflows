@@ -1,0 +1,390 @@
+{
+  "name": "Triagem de Leads Inbound",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-inbound",
+        "options": {}
+      },
+      "id": "7c9dde8f-3dac-496f-901e-9dcc31d717a4",
+      "name": "Receber Lead (Webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -32,
+        96
+      ],
+      "webhookId": "422be746-6cbb-449f-a88a-719519a31926"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "groqApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"openai/gpt-oss-120b\",\n  \"temperature\": 0.3,\n  \"reasoning_effort\": \"low\",\n  \"reasoning_format\": \"hidden\",\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    { \"role\": \"system\", \"content\": \"Você é um SDR especialista em triagem de leads inbound. Analise o lead e responda APENAS com um objeto JSON válido, sem texto adicional, com exatamente estas chaves: score (número inteiro de 1 a 10 indicando a prioridade do lead), classificacao (string, exatamente um destes valores: Quente, Morno ou Frio), resumo (string, uma frase resumindo o que o lead precisa), sugestao_resposta (string, mensagem curta e cordial que o vendedor pode enviar no WhatsApp).\" },\n    { \"role\": \"user\", \"content\": {{ JSON.stringify(\"Analise este lead inbound:\\n\\nNome: \" + $json.body.nome + \"\\nEmail: \" + $json.body.email + \"\\nTelefone: \" + $json.body.telefone + \"\\nMensagem: \" + $json.body.mensagem + \"\\nOrçamento: \" + $json.body.orcamento) }} }\n  ]\n}",
+        "options": {}
+      },
+      "id": "2aef73d5-f14f-4308-923d-f01281c3980d",
+      "name": "Groq - Analisar Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        208,
+        96
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "UV1fCAI4MB7EBikT",
+          "name": "Groq account 2"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $('Receber Lead (Webhook)').item.json.body || {};\nconst err = $json.error || {};\nconst errMsg = err.message || err.description || err.reason || (typeof $json.message === 'string' ? $json.message : '') || 'Falha desconhecida na API da Groq';\nreturn [{ json: {\n  nome: raw.nome,\n  email: raw.email,\n  telefone: raw.telefone,\n  mensagem: raw.mensagem,\n  orcamento: raw.orcamento,\n  score: '',\n  classificacao: 'Pendente (falha IA)',\n  resumo: 'Análise automática indisponível - classificar manualmente.',\n  sugestao_resposta: '',\n  erro_ia: String(errMsg),\n} }];"
+      },
+      "id": "9e731090-2ebb-4621-9c69-dea56409eda7",
+      "name": "Preparar Lead (Falha IA)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1aTZd_-RSgtzCzW9sfTmhFM-6CztJCafDG2xoFPgPT9k",
+          "mode": "list",
+          "cachedResultName": "Pipeline - Triagem Inbound",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aTZd_-RSgtzCzW9sfTmhFM-6CztJCafDG2xoFPgPT9k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aTZd_-RSgtzCzW9sfTmhFM-6CztJCafDG2xoFPgPT9k/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "email"
+          ],
+          "value": {},
+          "schema": []
+        },
+        "options": {
+          "handlingExtraData": "insertInNewColumn"
+        }
+      },
+      "id": "d71c07be-32b7-433e-9320-f6d8f8d47098",
+      "name": "Salvar no Google Sheets (Falha IA)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1616,
+        112
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kTbNTgh5oGDbOrHK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "8099580676",
+        "text": "=⚠️ <b>Falha na análise do lead (Groq)</b>\n\nA API da Groq oscilou/falhou. O lead foi <b>salvo na planilha</b> sem classificação automática — classifique manualmente.\n\n<b>Nome:</b> {{ $json.nome }}\n<b>Email:</b> {{ $json.email }}\n<b>Telefone:</b> {{ $json.telefone }}\n<b>Mensagem:</b> {{ $json.mensagem }}\n<b>Orçamento:</b> {{ $json.orcamento }}\n\n<b>Erro:</b> {{ $json.erro_ia }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "4e14283b-8236-4cee-8314-692c487f7ab0",
+      "name": "Alerta de Erro Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1840,
+        112
+      ],
+      "webhookId": "93cd55de-0db8-4711-849d-7553e6d501b6",
+      "credentials": {
+        "telegramApi": {
+          "id": "LIoA3Pcg3cm7Jib6",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $('Receber Lead (Webhook)').item.json.body || {};\nconst content = $json.choices[0].message.content;\nlet ai = {};\ntry {\n  ai = typeof content === 'string' ? JSON.parse(content) : (content || {});\n} catch (e) {\n  ai = {};\n}\nreturn [{ json: {\n  nome: raw.nome,\n  email: raw.email,\n  telefone: raw.telefone,\n  mensagem: raw.mensagem,\n  orcamento: raw.orcamento,\n  score: ai.score,\n  classificacao: ai.classificacao,\n  resumo: ai.resumo,\n  sugestao_resposta: ai.sugestao_resposta,\n} }];"
+      },
+      "id": "3b837ab0-f322-4f1a-8012-24f3a8434bf2",
+      "name": "Combinar Dados + IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1aTZd_-RSgtzCzW9sfTmhFM-6CztJCafDG2xoFPgPT9k",
+          "mode": "list",
+          "cachedResultName": "Pipeline - Triagem Inbound",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aTZd_-RSgtzCzW9sfTmhFM-6CztJCafDG2xoFPgPT9k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aTZd_-RSgtzCzW9sfTmhFM-6CztJCafDG2xoFPgPT9k/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "email"
+          ],
+          "value": {},
+          "schema": []
+        },
+        "options": {
+          "handlingExtraData": "insertInNewColumn"
+        }
+      },
+      "id": "22038e52-c1af-4d52-ac5f-32c8786979a1",
+      "name": "Salvar no Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        688,
+        80
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kTbNTgh5oGDbOrHK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "quente",
+              "leftValue": "={{ $json.classificacao }}",
+              "rightValue": "Quente",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "morno",
+              "leftValue": "={{ $json.classificacao }}",
+              "rightValue": "Morno",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "36d27996-def0-44e1-82a1-fcb3f308ba98",
+      "name": "Somente Quente ou Morno",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "8099580676",
+        "text": "=🚀 <b>Novo Lead {{ $json.classificacao }}</b>\n\n👤 <b>{{ $json.nome }}</b>\n📱 {{ $json.telefone }}\n⭐ Score: {{ $json.score }}/10\n\n📝 <b>Resumo:</b> {{ $json.resumo }}\n\n💬 <b>Sugestão de resposta:</b>\n{{ $json.sugestao_resposta }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "💬 Falar no WhatsApp",
+                    "additionalFields": {
+                      "url": "=https://wa.me/{{ String($json.telefone).replace(/\\D/g, \"\") }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "773e24ab-8706-4066-b0a4-3cdb0b88aa0e",
+      "name": "Alerta Telegram (Sucesso)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1136,
+        64
+      ],
+      "webhookId": "b0033eba-de2d-49e8-953f-9d25ce6db68e",
+      "credentials": {
+        "telegramApi": {
+          "id": "LIoA3Pcg3cm7Jib6",
+          "name": "Telegram account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receber Lead (Webhook)": {
+      "main": [
+        [
+          {
+            "node": "Groq - Analisar Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq - Analisar Lead": {
+      "main": [
+        [
+          {
+            "node": "Combinar Dados + IA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preparar Lead (Falha IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Lead (Falha IA)": {
+      "main": [
+        [
+          {
+            "node": "Salvar no Google Sheets (Falha IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar no Google Sheets (Falha IA)": {
+      "main": [
+        [
+          {
+            "node": "Alerta de Erro Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combinar Dados + IA": {
+      "main": [
+        [
+          {
+            "node": "Salvar no Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar no Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Somente Quente ou Morno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Somente Quente ou Morno": {
+      "main": [
+        [
+          {
+            "node": "Alerta Telegram (Sucesso)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ffa15c95-e95e-43e6-8663-f3996aae538b",
+  "meta": {
+    "instanceId": "830215570898cbc950f5b879f6f663fa488e31605bddec65315cae501add492e"
+  },
+  "nodeGroups": [
+    {
+      "id": "e5f1dcfa-f9cb-40cc-904f-e9caf7186f5f",
+      "name": "Análise e Triagem",
+      "nodeIds": [
+        "3b837ab0-f322-4f1a-8012-24f3a8434bf2",
+        "22038e52-c1af-4d52-ac5f-32c8786979a1",
+        "36d27996-def0-44e1-82a1-fcb3f308ba98",
+        "773e24ab-8706-4066-b0a4-3cdb0b88aa0e"
+      ],
+      "description": "Combina os dados do lead com a análise da Groq, salva no Google Sheets (upsert), filtra por classificação e alerta o vendedor no Telegram."
+    },
+    {
+      "id": "2f7730e0-8b65-4c3e-946f-3f997421adc4",
+      "name": "Tratamento de Erro (Groq)",
+      "nodeIds": [
+        "9e731090-2ebb-4621-9c69-dea56409eda7",
+        "d71c07be-32b7-433e-9320-f6d8f8d47098",
+        "4e14283b-8236-4cee-8314-692c487f7ab0"
+      ],
+      "description": "Se a Groq falhar, salva o lead sem classificação e envia um alerta de erro no Telegram."
+    }
+  ],
+  "id": "QHbrd6HMQSOVB6Lg",
+  "tags": []
+}
