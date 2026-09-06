@@ -1,0 +1,94 @@
+{
+  "name": "Teste - Nó Groq (Triagem)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c48b1b97-d6de-4338-97cf-8d86482074fe",
+      "name": "Executar Teste Groq",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"body\": {\n    \"nome\": \"João Pereira\",\n    \"email\": \"joao.pereira@techstartup.com\",\n    \"telefone\": \"5511988887777\",\n    \"mensagem\": \"Olá, temos uma equipe de 25 vendedores e queremos automatizar todo o funil de leads. Orçamento aprovado e queremos começar este mês.\",\n    \"orcamento\": \"R$ 30.000\"\n  }\n}",
+        "options": {}
+      },
+      "id": "bc81a0f2-702a-4a54-8016-fd3e6859fad6",
+      "name": "Dados Fictícios",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "groqApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"openai/gpt-oss-120b\",\n  \"temperature\": 0.3,\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    { \"role\": \"system\", \"content\": \"Você é um SDR especialista em triagem de leads inbound. Analise o lead e responda APENAS com um objeto JSON válido, sem texto adicional, com exatamente estas chaves: score (número inteiro de 1 a 10 indicando a prioridade do lead), classificacao (string, exatamente um destes valores: Quente, Morno ou Frio), resumo (string, uma frase resumindo o que o lead precisa), sugestao_resposta (string, mensagem curta e cordial que o vendedor pode enviar no WhatsApp).\" },\n    { \"role\": \"user\", \"content\": {{ JSON.stringify(\"Analise este lead inbound:\\n\\nNome: \" + $json.body.nome + \"\\nEmail: \" + $json.body.email + \"\\nTelefone: \" + $json.body.telefone + \"\\nMensagem: \" + $json.body.mensagem + \"\\nOrçamento: \" + $json.body.orcamento) }} }\n  ]\n}",
+        "options": {}
+      },
+      "id": "cef15adf-426e-4933-9f27-898d7e7bfc7c",
+      "name": "Groq - Analisar Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "UV1fCAI4MB7EBikT",
+          "name": "Groq account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Executar Teste Groq": {
+      "main": [
+        [
+          {
+            "node": "Dados Fictícios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados Fictícios": {
+      "main": [
+        [
+          {
+            "node": "Groq - Analisar Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "7b089a55-c614-423b-af33-6ce4a06dab05",
+  "meta": {
+    "instanceId": "830215570898cbc950f5b879f6f663fa488e31605bddec65315cae501add492e"
+  },
+  "nodeGroups": [],
+  "id": "LPW8jHkACW9xsi0n",
+  "tags": []
+}
