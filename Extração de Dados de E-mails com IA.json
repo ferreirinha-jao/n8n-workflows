@@ -1,0 +1,349 @@
+{
+  "name": "Extração de Dados de E-mails com IA",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "q": "subject:(\"Nota Fiscal\" OR Pedido OR Orçamento OR Orcamento) OR has:attachment",
+          "readStatus": "unread"
+        },
+        "options": {
+          "downloadAttachments": false
+        }
+      },
+      "id": "58f3a787-b93b-4376-b28e-e5bdbcbedae2",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        112
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3FNsScwIkXJOSdhM",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é um assistente de extração de dados de documentos fiscais e comerciais brasileiros (Notas Fiscais, Pedidos e Orçamentos).\nAnalise o e-mail abaixo e extraia ESTRITAMENTE os campos solicitados.\nRegras:\n- Responda APENAS com um objeto JSON válido, sem texto adicional e sem marcações de markdown (nada de ```json).\n- valor_total deve ser um número (use ponto como separador decimal, sem símbolo de moeda nem separador de milhar).\n- data_vencimento no formato YYYY-MM-DD quando possível; caso não exista, retorne string vazia.\n- Se algum campo não for encontrado, use string vazia (ou 0 para valor_total).\n\nASSUNTO: {{ $json.subject }}\nREMETENTE: {{ $json.from }}\nCORPO DO E-MAIL:\n{{ $json.text }}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "id": "38b9ea17-0ba9-45ad-a759-a7fcd54a55d9",
+      "name": "Extrair Dados com IA",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        224,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "531382ff-af99-4e44-940e-1bcb343beb0a",
+      "name": "Groq Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        224,
+        288
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "UV1fCAI4MB7EBikT",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"razao_social_cliente\":{\"type\":\"string\"},\"cnpj_cpf\":{\"type\":\"string\"},\"valor_total\":{\"type\":\"number\"},\"data_vencimento\":{\"type\":\"string\"},\"numero_documento\":{\"type\":\"string\"},\"resumo_pedido\":{\"type\":\"string\"}},\"required\":[\"razao_social_cliente\",\"cnpj_cpf\",\"valor_total\",\"data_vencimento\",\"numero_documento\",\"resumo_pedido\"]}"
+      },
+      "id": "c37b5b20-5ef4-42a0-8768-a9540419262c",
+      "name": "Parser JSON",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        368,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1nPNT95iI3ffrKqjKOsiQ8hPkzOfPYL6mwkQRyJZP2q0",
+          "mode": "list",
+          "cachedResultName": "Extração de Dados - E-mails",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nPNT95iI3ffrKqjKOsiQ8hPkzOfPYL6mwkQRyJZP2q0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nPNT95iI3ffrKqjKOsiQ8hPkzOfPYL6mwkQRyJZP2q0/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "CNPJ_CPF": "={{ $json.output.cnpj_cpf }}",
+            "Resumo_Pedido": "={{ $('Gmail Trigger').item.json.id }}",
+            "Numero_Documento": "={{ $('Gmail Trigger').item.json.threadId }}",
+            "Valor_Total": "={{ $('Gmail Trigger').item.json.labelIds[0] }}",
+            "Data_Vencimento": "={{ $('Gmail Trigger').item.json.labelIds }}",
+            "Razao_Social_Cliente": "={{ $json.output.razao_social_cliente }}"
+          },
+          "matchingColumns": [
+            "Resumo_Pedido"
+          ],
+          "schema": [
+            {
+              "id": "Numero_Documento",
+              "displayName": "Numero_Documento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Razao_Social_Cliente",
+              "displayName": "Razao_Social_Cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "CNPJ_CPF",
+              "displayName": "CNPJ_CPF",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Valor_Total",
+              "displayName": "Valor_Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Data_Vencimento",
+              "displayName": "Data_Vencimento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Resumo_Pedido",
+              "displayName": "Resumo_Pedido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "b3c075a2-e81a-43cc-b891-8cd6820ff824",
+      "name": "Salvar na Planilha",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        576,
+        112
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kTbNTgh5oGDbOrHK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "8099580676",
+        "text": "=<b>✅ Novo documento processado</b>\n\n<b>Razão Social:</b> {{ $('Extrair Dados com IA').first().json.output.razao_social_cliente }}\n<b>Documento:</b> {{ $('Extrair Dados com IA').first().json.output.numero_documento }}\n<b>Valor Total:</b> R$ {{ $('Extrair Dados com IA').first().json.output.valor_total }}\n<b>Vencimento:</b> {{ $('Extrair Dados com IA').first().json.output.data_vencimento }}\n\nOs dados foram salvos na planilha.",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "cb4c62ff-8c68-4e29-8d69-1458d6b5f9da",
+      "name": "Notificar Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        112
+      ],
+      "webhookId": "353559a2-90b2-47c4-862e-180a04011b7f",
+      "credentials": {
+        "telegramApi": {
+          "id": "42J4PO56713fw6Tu",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}"
+      },
+      "id": "09fe1c6d-5cbd-4bcb-bd66-60d2bfb42ae1",
+      "name": "Marcar E-mail como Lido",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        112
+      ],
+      "webhookId": "81bbe432-1f18-49fc-9d60-a9cb6b05e3fd",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3FNsScwIkXJOSdhM",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extrair Dados com IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair Dados com IA": {
+      "main": [
+        [
+          {
+            "node": "Salvar na Planilha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extrair Dados com IA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser JSON": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Extrair Dados com IA",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar na Planilha": {
+      "main": [
+        [
+          {
+            "node": "Notificar Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notificar Telegram": {
+      "main": [
+        [
+          {
+            "node": "Marcar E-mail como Lido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f5856482-6b6e-47b1-ba49-adfda21cd925",
+  "meta": {
+    "instanceId": "830215570898cbc950f5b879f6f663fa488e31605bddec65315cae501add492e"
+  },
+  "nodeGroups": [
+    {
+      "id": "871ca465-2c1d-44c7-870f-d0efc661f224",
+      "name": "Extração com IA",
+      "nodeIds": [
+        "38b9ea17-0ba9-45ad-a759-a7fcd54a55d9",
+        "531382ff-af99-4e44-940e-1bcb343beb0a",
+        "c37b5b20-5ef4-42a0-8768-a9540419262c"
+      ],
+      "description": "Groq (Llama 3.3 70B) extrai os campos do documento em JSON estruturado."
+    },
+    {
+      "id": "ece79178-5b66-4d2d-b287-5e874f80e5b9",
+      "name": "Persistência e Notificação",
+      "nodeIds": [
+        "b3c075a2-e81a-43cc-b891-8cd6820ff824",
+        "cb4c62ff-8c68-4e29-8d69-1458d6b5f9da",
+        "09fe1c6d-5cbd-4bcb-bd66-60d2bfb42ae1"
+      ],
+      "description": "Faz upsert na planilha, notifica no Telegram e marca o e-mail como lido."
+    }
+  ],
+  "id": "vuxku4AuS0GqcQzy",
+  "tags": []
+}
