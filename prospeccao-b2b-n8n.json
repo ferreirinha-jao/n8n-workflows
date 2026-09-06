@@ -1,0 +1,173 @@
+{
+  "name": "Prospecção B2B - Leads com IA",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1a2b3c4d-0001-0001-0001-000000000001",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/apify~linkedin-profile-scraper/runs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"api_key\": \"SUA_CHAVE_API_APIFY\",\n  \"person_titles\": [\"CEO\", \"Diretor de Marketing\", \"Gerente de Vendas\", \"Founder\"],\n  \"page\": 1,\n  \"per_page\": 10\n}",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0002-0002-0002-000000000002",
+      "name": "HTTP Request - Apify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer SUA_CHAVE_API_GROQ"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Você é um especialista em vendas B2B e prospecção fria (Outbound Mail). Sua função é criar abordagens diretas, personalizadas e de alto impacto para executivos, sem parecer spam ou vendedor desesperado.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Analise o lead abaixo e crie uma abordagem fria (Cold E-mail) curta e personalizada.\\n\\nDADOS DO LEAD:\\n- Nome: {{ $('HTTP Request - Apify').item.json.first_name }} {{ $('HTTP Request - Apify').item.json.last_name }}\\n- Cargo: {{ $('HTTP Request - Apify').item.json.title }}\\n- Empresa: {{ $('HTTP Request - Apify').item.json.organization.name }}\\n- LinkedIn: {{ $('HTTP Request - Apify').item.json.linkedin_url }}\\n\\nREGRAS DE RESPOSTA:\\n1. Retorne ESTRITAMENTE um objeto JSON válido.\\n2. NADA de marcações Markdown (sem ```json), texto introdutório ou explicações adicionais.\\n3. O assunto deve ter no máximo 5 palavras e despertar curiosidade.\\n4. O corpo do e-mail deve ter no máximo 3 parágrafos curtos focados no desafio do cargo de {{ $('HTTP Request - Apify').item.json.title }}.\\n5. O objetivo final do e-mail é propor uma conversa rápida de 15 minutos.\\n\\nESTRUTURA DO JSON ESPERADO:\\n{\\n  \\\"assunto_email\\\": \\\"Texto do assunto aqui\\\",\\n  \\\"corpo_email\\\": \\\"Texto completo do e-mail aqui\\\"\\n}\"\n    }\n  ],\n  \"temperature\": 0.7,\n  \"max_tokens\": 1000\n}",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0003-0003-0003-000000000003",
+      "name": "Groq AI - Cold Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const groqResponse = items[0].json;\nconst rawContent = groqResponse.choices[0].message.content;\n\nlet parsed;\ntry {\n  parsed = JSON.parse(rawContent);\n} catch (e) {\n  const match = rawContent.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    parsed = JSON.parse(match[0]);\n  } else {\n    throw new Error('Não foi possível extrair JSON da resposta do Groq: ' + rawContent);\n  }\n}\n\nreturn [{\n  json: {\n    assunto_email: parsed.assunto_email,\n    corpo_email: parsed.corpo_email\n  }\n}];"
+      },
+      "id": "1a2b3c4d-0004-0004-0004-000000000004",
+      "name": "Parsear JSON do Groq",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "SEU_ID_DA_PLANILHA",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospecção B2B - Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nome": "={{ $('HTTP Request - Apify').item.json.first_name }} {{ $('HTTP Request - Apify').item.json.last_name }}",
+            "Cargo": "={{ $('HTTP Request - Apify').item.json.title }}",
+            "Empresa": "={{ $('HTTP Request - Apify').item.json.organization.name }}",
+            "Email": "={{ $('HTTP Request - Apify').item.json.email }}",
+            "LinkedIn": "={{ $('HTTP Request - Apify').item.json.linkedin_url }}",
+            "Assunto Gerado": "={{ $('Parsear JSON do Groq').item.json.assunto_email }}",
+            "Email Gerado": "={{ $('Parsear JSON do Groq').item.json.corpo_email }}",
+            "Status": "Pendente de Envio"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "1a2b3c4d-0005-0005-0005-000000000005",
+      "name": "Google Sheets - Registrar Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Apify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Apify": {
+      "main": [
+        [
+          {
+            "node": "Groq AI - Cold Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq AI - Cold Email": {
+      "main": [
+        [
+          {
+            "node": "Parsear JSON do Groq",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear JSON do Groq": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Registrar Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-05-26T00:00:00.000Z",
+  "versionId": "1"
+}
