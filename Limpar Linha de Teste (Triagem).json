@@ -1,0 +1,124 @@
+{
+  "name": "Limpar Linha de Teste (Triagem)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "f83b6170-55b2-4784-ab36-23b5f41b992b",
+      "name": "Executar Limpeza",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1aTZd_-RSgtzCzW9sfTmhFM-6CztJCafDG2xoFPgPT9k",
+          "cachedResultName": "Pipeline - Triagem Inbound"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "Página1"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "email",
+              "lookupValue": "maria.teste@empresa.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a11f6f44-1a32-4ba1-ab82-0b89167ae3a6",
+      "name": "Localizar Linha de Teste",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kTbNTgh5oGDbOrHK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1aTZd_-RSgtzCzW9sfTmhFM-6CztJCafDG2xoFPgPT9k",
+          "cachedResultName": "Pipeline - Triagem Inbound"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "Página1"
+        },
+        "startIndex": "={{ $json.row_number }}"
+      },
+      "id": "1b10e336-5af4-40d4-936f-a06c19f5343a",
+      "name": "Apagar Linha",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        448,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kTbNTgh5oGDbOrHK",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Executar Limpeza": {
+      "main": [
+        [
+          {
+            "node": "Localizar Linha de Teste",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Localizar Linha de Teste": {
+      "main": [
+        [
+          {
+            "node": "Apagar Linha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "37f88a82-5370-4c72-b62b-d20a01f73600",
+  "meta": {
+    "instanceId": "830215570898cbc950f5b879f6f663fa488e31605bddec65315cae501add492e"
+  },
+  "nodeGroups": [],
+  "id": "mqntAK3gWkco1AWs",
+  "tags": []
+}
