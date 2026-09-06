@@ -1,0 +1,210 @@
+{
+  "name": "Teste - Ramo de Erro Groq",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a0a3ed0f-eaaa-4cef-88c2-9c13307ac8f8",
+      "name": "Executar Teste Ramo Erro",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"body\": {\n    \"nome\": \"Bruno Falha (TESTE ERRO)\",\n    \"email\": \"bruno.teste.erro@empresa.com\",\n    \"telefone\": \"5511922223333\",\n    \"mensagem\": \"Quero uma proposta de automação de vendas para meu time.\",\n    \"orcamento\": \"R$ 10.000\"\n  }\n}",
+        "options": {}
+      },
+      "id": "802a6607-ebe5-45ab-9995-52faba1a0569",
+      "name": "Dados Fictícios",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "groqApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"modelo-inexistente-para-forcar-erro\",\n  \"temperature\": 0.3,\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    { \"role\": \"system\", \"content\": \"Você é um SDR.\" },\n    { \"role\": \"user\", \"content\": {{ JSON.stringify(\"Analise: \" + $json.body.nome) }} }\n  ]\n}",
+        "options": {}
+      },
+      "id": "1fcb7ffe-b2ec-4872-afcd-0aeb34065d18",
+      "name": "Groq - Analisar Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "UV1fCAI4MB7EBikT",
+          "name": "Groq account 2"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $('Dados Fictícios').item.json.body || {};\nconst err = $json.error || {};\nconst errMsg = err.message || err.description || err.reason || (typeof $json.message === 'string' ? $json.message : '') || 'Falha desconhecida na API da Groq';\nreturn [{ json: {\n  nome: raw.nome,\n  email: raw.email,\n  telefone: raw.telefone,\n  mensagem: raw.mensagem,\n  orcamento: raw.orcamento,\n  score: '',\n  classificacao: 'Pendente (falha IA)',\n  resumo: 'Análise automática indisponível - classificar manualmente.',\n  sugestao_resposta: '',\n  erro_ia: String(errMsg),\n} }];"
+      },
+      "id": "fb66c549-392c-41c6-9310-d18342565f2f",
+      "name": "Preparar Lead (Falha IA)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1aTZd_-RSgtzCzW9sfTmhFM-6CztJCafDG2xoFPgPT9k",
+          "mode": "list",
+          "cachedResultName": "Pipeline - Triagem Inbound",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aTZd_-RSgtzCzW9sfTmhFM-6CztJCafDG2xoFPgPT9k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aTZd_-RSgtzCzW9sfTmhFM-6CztJCafDG2xoFPgPT9k/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "email"
+          ],
+          "value": {},
+          "schema": []
+        },
+        "options": {
+          "handlingExtraData": "insertInNewColumn"
+        }
+      },
+      "id": "985c5cdb-b91c-4831-a86d-fc4812e69082",
+      "name": "Salvar no Google Sheets (Falha IA)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        896,
+        16
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kTbNTgh5oGDbOrHK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "8099580676",
+        "text": "=⚠️ <b>[TESTE] Falha na análise do lead (Groq)</b>\n\nA API da Groq oscilou/falhou. O lead foi <b>salvo na planilha</b> sem classificação automática — classifique manualmente.\n\n<b>Nome:</b> {{ $json.nome }}\n<b>Email:</b> {{ $json.email }}\n<b>Telefone:</b> {{ $json.telefone }}\n<b>Mensagem:</b> {{ $json.mensagem }}\n<b>Orçamento:</b> {{ $json.orcamento }}\n\n<b>Erro:</b> {{ $json.erro_ia }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "70a3a6ef-d961-4e14-bbe2-948cb3e0072f",
+      "name": "Alerta de Erro Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1120,
+        16
+      ],
+      "webhookId": "9ebdd87c-b40d-49c7-9c20-9dfee6ef6358",
+      "credentials": {
+        "telegramApi": {
+          "id": "LIoA3Pcg3cm7Jib6",
+          "name": "Telegram account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Executar Teste Ramo Erro": {
+      "main": [
+        [
+          {
+            "node": "Dados Fictícios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados Fictícios": {
+      "main": [
+        [
+          {
+            "node": "Groq - Analisar Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq - Analisar Lead": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Preparar Lead (Falha IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Lead (Falha IA)": {
+      "main": [
+        [
+          {
+            "node": "Salvar no Google Sheets (Falha IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar no Google Sheets (Falha IA)": {
+      "main": [
+        [
+          {
+            "node": "Alerta de Erro Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c89e7e3d-68c5-4782-baa1-5d917ce4d794",
+  "meta": {
+    "instanceId": "830215570898cbc950f5b879f6f663fa488e31605bddec65315cae501add492e"
+  },
+  "nodeGroups": [],
+  "id": "TL6lsO61p7VKXW06",
+  "tags": []
+}
