@@ -1,0 +1,158 @@
+{
+  "name": "Qualificação B2B - WhatsApp com IA",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-qualificacao",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "2b3c4d5e-0001-0001-0001-000000000001",
+      "name": "Webhook - WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "whatsapp-qualificacao"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer SUA_CHAVE_API_GROQ"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Você é um pré-vendedor (SDR) e consultor B2B altamente qualificado. Sua função é analisar a mensagem recebida pelo WhatsApp, identificar a intenção do cliente, classificar se ele é um lead qualificado (com base em necessidade, porte ou urgência) e gerar a resposta ideal para continuar o atendimento ou enviar o link de agendamento.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Analise a mensagem recebida no WhatsApp e qualifique o lead.\\n\\nDADOS DA MENSAGEM:\\n- Nome: {{ $('Webhook - WhatsApp').item.json.body.nome_contato }}\\n- Telefone: {{ $('Webhook - WhatsApp').item.json.body.telefone }}\\n- Mensagem do Cliente: {{ $('Webhook - WhatsApp').item.json.body.mensagem }}\\n\\nREGRAS DE RESPOSTA:\\n1. Retorne ESTRITAMENTE um objeto JSON válido.\\n2. NADA de marcações Markdown (sem ```json), texto introdutório ou explicações adicionais.\\n3. Classifique o status em: 'Qualificado', 'Dúvida Geral' ou 'Fora do Perfil'.\\n4. Crie uma resposta adequada para enviar ao cliente no WhatsApp. Se for 'Qualificado', inclua o link de agendamento (ex: https://cal.com/seu-link).\\n\\nESTRUTURA DO JSON ESPERADO:\\n{\\n  \\\"status_qualificacao\\\": \\\"Qualificado\\\",\\n  \\\"resumo_necessidade\\\": \\\"Breve resumo do que o cliente precisa\\\",\\n  \\\"resposta_sugerida\\\": \\\"Texto da resposta para enviar no WhatsApp\\\"\\n}\"\n    }\n  ],\n  \"temperature\": 0.7,\n  \"max_tokens\": 1000\n}",
+        "options": {}
+      },
+      "id": "2b3c4d5e-0002-0002-0002-000000000002",
+      "name": "Groq AI - SDR Qualificação",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const groqResponse = items[0].json;\nconst rawContent = groqResponse.choices[0].message.content;\n\nlet parsed;\ntry {\n  parsed = JSON.parse(rawContent);\n} catch (e) {\n  const match = rawContent.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    parsed = JSON.parse(match[0]);\n  } else {\n    throw new Error('Não foi possível extrair JSON da resposta do Groq: ' + rawContent);\n  }\n}\n\nreturn [{\n  json: {\n    status_qualificacao: parsed.status_qualificacao ?? 'Indefinido',\n    resumo_necessidade: parsed.resumo_necessidade ?? '',\n    resposta_sugerida: parsed.resposta_sugerida ?? ''\n  }\n}];"
+      },
+      "id": "2b3c4d5e-0003-0003-0003-000000000003",
+      "name": "Parsear JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "SEU_ID_DA_PLANILHA",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads Inbound - WhatsApp",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Telefone": "={{ $('Webhook - WhatsApp').item.json.body.telefone }}",
+            "Nome": "={{ $('Webhook - WhatsApp').item.json.body.nome_contato }}",
+            "Mensagem Recebida": "={{ $('Webhook - WhatsApp').item.json.body.mensagem }}",
+            "Status": "={{ $('Parsear JSON').item.json.status_qualificacao }}",
+            "Resumo da Necessidade": "={{ $('Parsear JSON').item.json.resumo_necessidade }}",
+            "Resposta Gerada": "={{ $('Parsear JSON').item.json.resposta_sugerida }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "2b3c4d5e-0004-0004-0004-000000000004",
+      "name": "Google Sheets - Registrar Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ received: true }) }}",
+        "options": {}
+      },
+      "id": "2b3c4d5e-0005-0005-0005-000000000005",
+      "name": "Resposta Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Groq AI - SDR Qualificação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq AI - SDR Qualificação": {
+      "main": [
+        [
+          {
+            "node": "Parsear JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear JSON": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Registrar Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Registrar Lead": {
+      "main": [
+        [
+          {
+            "node": "Resposta Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-05-26T00:00:00.000Z",
+  "versionId": "1"
+}
