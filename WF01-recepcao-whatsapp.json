@@ -1,0 +1,202 @@
+{
+  "name": "WF01 - Recepção WhatsApp - Elite Barbearia",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "elite-barbearia-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "wf01-001",
+      "name": "Webhook - Mensagem WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "elite-barbearia-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrair e normalizar dados da mensagem recebida\n// Suporta Evolution API e Z-API (adaptar conforme provider real)\nconst body = items[0].json.body || items[0].json;\n\n// Evolution API\nlet telefone = body.data?.key?.remoteJid?.replace('@s.whatsapp.net', '') \n               || body.telefone \n               || body.from \n               || null;\n\nlet mensagem = body.data?.message?.conversation \n               || body.data?.message?.extendedTextMessage?.text\n               || body.mensagem \n               || body.text \n               || null;\n\nlet nome_contato = body.data?.pushName || body.nome_contato || 'Cliente';\nlet message_id = body.data?.key?.id || body.messageId || Date.now().toString();\nlet timestamp = new Date().toISOString();\n\n// Ignorar mensagens de grupos\nif (telefone && telefone.includes('@g.us')) {\n  return [{ json: { ignorar: true } }];\n}\n\n// Ignorar se mensagem vazia\nif (!mensagem || !telefone) {\n  return [{ json: { ignorar: true } }];\n}\n\n// Normalizar telefone (remover +, espaços)\ntelefone = telefone.replace(/[^0-9]/g, '');\n\nreturn [{\n  json: {\n    telefone,\n    mensagem,\n    nome_contato,\n    message_id,\n    timestamp,\n    ignorar: false\n  }\n}];"
+      },
+      "id": "wf01-002",
+      "name": "Extrair Dados da Mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-ignorar",
+              "leftValue": "={{ $json.ignorar }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equal" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "wf01-003",
+      "name": "Deve Ignorar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "value": "ID_PLANILHA_CLIENTES", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Clientes", "mode": "name" },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "telefone",
+              "lookupValue": "={{ $('Extrair Dados da Mensagem').item.json.telefone }}"
+            }
+          ]
+        },
+        "options": { "returnFirstMatch": true }
+      },
+      "id": "wf01-004",
+      "name": "Buscar Cliente no Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [900, 180]
+    },
+    {
+      "parameters": {
+        "jsCode": "const msgData = $('Extrair Dados da Mensagem').item.json;\nconst clienteSheets = items[0].json;\n\nconst clienteExiste = clienteSheets && clienteSheets.telefone;\n\nlet cliente;\nif (clienteExiste) {\n  cliente = {\n    id_interno: clienteSheets.id_interno,\n    id_appbarber: clienteSheets.id_appbarber || null,\n    nome: clienteSheets.nome || msgData.nome_contato,\n    telefone: msgData.telefone,\n    status: clienteSheets.status || 'ATIVO',\n    opt_out: clienteSheets.opt_out === 'true' || false,\n    ultimo_contato: clienteSheets.ultimo_contato,\n    ultimo_atendimento: clienteSheets.ultimo_atendimento,\n    novo_cliente: false\n  };\n} else {\n  cliente = {\n    id_interno: 'CLI-' + Date.now(),\n    id_appbarber: null,\n    nome: msgData.nome_contato,\n    telefone: msgData.telefone,\n    status: 'NOVO',\n    opt_out: false,\n    ultimo_contato: null,\n    ultimo_atendimento: null,\n    novo_cliente: true\n  };\n}\n\nreturn [{\n  json: {\n    cliente,\n    mensagem: msgData.mensagem,\n    timestamp: msgData.timestamp,\n    message_id: msgData.message_id\n  }\n}];"
+      },
+      "id": "wf01-005",
+      "name": "Montar Contexto do Cliente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-optout",
+              "leftValue": "={{ $json.cliente.opt_out }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equal" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "wf01-006",
+      "name": "Cliente Opt-out?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 180]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "value": "ID_PLANILHA_CONVERSAS", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Conversas", "mode": "name" },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "telefone",
+              "lookupValue": "={{ $('Montar Contexto do Cliente').item.json.cliente.telefone }}"
+            }
+          ]
+        },
+        "options": { "returnFirstMatch": true }
+      },
+      "id": "wf01-007",
+      "name": "Buscar Histórico Conversa",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [1560, 120]
+    },
+    {
+      "parameters": {
+        "workflowId": { "__rl": true, "value": "ID_WF02_AGENTE_IA", "mode": "id" },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cliente": "={{ $('Montar Contexto do Cliente').item.json.cliente }}",
+            "mensagem": "={{ $('Montar Contexto do Cliente').item.json.mensagem }}",
+            "timestamp": "={{ $('Montar Contexto do Cliente').item.json.timestamp }}",
+            "historico": "={{ $('Buscar Histórico Conversa').item.json.historico || '[]' }}",
+            "estado_conversa": "={{ $('Buscar Histórico Conversa').item.json.estado || 'NOVO' }}"
+          }
+        }
+      },
+      "id": "wf01-008",
+      "name": "Chamar Agente IA (WF02)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [1780, 120]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"received\" }",
+        "options": {}
+      },
+      "id": "wf01-009",
+      "name": "Responder Webhook OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2000, 120]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"ignored\" }",
+        "options": {}
+      },
+      "id": "wf01-010",
+      "name": "Ignorar Mensagem",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 420]
+    }
+  ],
+  "connections": {
+    "Webhook - Mensagem WhatsApp": {
+      "main": [[{ "node": "Extrair Dados da Mensagem", "type": "main", "index": 0 }]]
+    },
+    "Extrair Dados da Mensagem": {
+      "main": [[{ "node": "Deve Ignorar?", "type": "main", "index": 0 }]]
+    },
+    "Deve Ignorar?": {
+      "main": [
+        [{ "node": "Ignorar Mensagem", "type": "main", "index": 0 }],
+        [{ "node": "Buscar Cliente no Sheets", "type": "main", "index": 0 }]
+      ]
+    },
+    "Buscar Cliente no Sheets": {
+      "main": [[{ "node": "Montar Contexto do Cliente", "type": "main", "index": 0 }]]
+    },
+    "Montar Contexto do Cliente": {
+      "main": [[{ "node": "Cliente Opt-out?", "type": "main", "index": 0 }]]
+    },
+    "Cliente Opt-out?": {
+      "main": [
+        [{ "node": "Ignorar Mensagem", "type": "main", "index": 0 }],
+        [{ "node": "Buscar Histórico Conversa", "type": "main", "index": 0 }]
+      ]
+    },
+    "Buscar Histórico Conversa": {
+      "main": [[{ "node": "Chamar Agente IA (WF02)", "type": "main", "index": 0 }]]
+    },
+    "Chamar Agente IA (WF02)": {
+      "main": [[{ "node": "Responder Webhook OK", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "tags": [{ "name": "elite-barbearia" }]
+}
